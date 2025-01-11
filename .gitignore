@@ -1,2 +1,4 @@
 tmp/.DS_Store
 tmp/
+input_files/
+*/__pycache__/
