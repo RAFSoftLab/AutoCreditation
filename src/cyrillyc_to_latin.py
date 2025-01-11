@@ -1,4 +1,6 @@
-
+'''
+Conversion of cyrillic characters to latin characters.
+'''
 
 CYR_TO_LAT_DICT = {
     u'А': u'A', u'а': u'a',
