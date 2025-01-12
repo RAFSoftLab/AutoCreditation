@@ -44,6 +44,8 @@ Automated reading and checkup of university acreditation documentation files.
   | :----------: | :---: | :-----: |
   | docx | pip install python-docx | conda install conda-forge::python-docx |
   | aspose-words | pip install aspose-words | :x: |
+  | PyQt5 | pip install PyQt5 | :x: |
+  | pyqtspinner | pip install pyqtspinner | :x: |
   <!-- | doc2docx | pip install doc2docx | :x: |  -->
   <!-- ??? -->
   <!-- | textract | pip install textract | conda install conda-forge::textract | -->
@@ -66,3 +68,22 @@ Automated reading and checkup of university acreditation documentation files.
     - Conversion from .docx to .txt
     - Conversion from cyrillic characters to latin characters
     - Updated README.md and requirements.txt
+  - 0.0.2 - Directory structure scanning
+    - Copy of documentation directory is made in a /tmp directory
+    - Listing of all files and folders in a given directory
+      - Saving paths of all files in a structure
+        - To ensure document content reading is possible, some files may be renamed
+        - Preserving original file names (directory structure) is done by saving the original file name as well as changed one
+  - 0.0.3 - GUI
+    - GUI application for AutoCreditation
+      - Main window
+      - Documentation directory path
+      - Run button
+      - Valid directory check label
+      - Clean /tmp directory
+      - Results and output text area
+        - Running spinner
+        - Progress bar
+        - Progress description
+      - Separate thread for running the main application
+      - Documentation copying and directory structure reading connected

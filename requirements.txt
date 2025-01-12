@@ -1,5 +1,7 @@
 python-docx
 aspose-words
+PyQt5
+pyqtspinner
 # textract
 # antiword
 # doc2docx

@@ -4,9 +4,13 @@ Directory reading and file listing. Path are saved in a structure.
 
 import json
 import os
+from pathlib import Path
 import shutil
+import sys
 
 import src.util as util
+
+is_windows = sys.platform.startswith('win')
 
 def list_dir(root_dir, dir_to_list='', dir_tree='', save_struct=True):
     """
@@ -24,26 +28,26 @@ def list_dir(root_dir, dir_to_list='', dir_tree='', save_struct=True):
 
     """
 
-    dir_to_list = '{}/tmp/input_files'.format(root_dir) if dir_to_list == '' else dir_to_list
+    dir_to_list = os.path.join(root_dir, Path('tmp/imput_files')) if dir_to_list == '' else dir_to_list
 
     dir_struct = []
 
     # Print and save tree structure of the documentation directory
-    dir_tree = util.print_save_tree(root_dir=root_dir, formed_tree=dir_tree, dir_path=dir_to_list, save_dir='{}/tmp'.format(root_dir), print_tree=False)
+    dir_tree = util.print_save_tree(root_dir=root_dir, formed_tree=dir_tree, dir_path=dir_to_list, save_dir=os.path.join(root_dir, Path('tmp')), print_tree=False)
 
     # Read a structure of the documentation directory
     dir_struct = util.dir_struct(doc_dir=dir_to_list, process_names=True)
 
     if save_struct == True:
         # Save structure of the documentation directory
-        struct_save_dir = '{}/tmp'.format(root_dir)
+        struct_save_dir = os.path.join(root_dir, 'tmp')
         if not os.path.exists(struct_save_dir):
             os.makedirs(struct_save_dir, exist_ok=True)
         try:
-            with open('{}/tmp/documentation_structure.json'.format(root_dir), 'w') as f:
+            with open(os.path.join(root_dir, Path('tmp/documentation_structure.json')), 'w') as f:
                 json.dump(dir_struct, f, indent=4)
         except Exception as e:
-            print(f'Error saving structure to {struct_save_dir}/documentation_structure.txt:\n    {e}')
+            print(f'Error saving structure to {os.path.join(struct_save_dir, Path('documentation_structure.txt'))}:\n    {e}')
 
     return dir_struct, dir_tree
 
@@ -61,11 +65,15 @@ def load_list_dir(root_dir, dir_struct_file='/tmp/documentation_structure.json')
 
     dir_struct = None
 
-    if not os.path.exists('{}{}'.format(root_dir, dir_struct_file)):
+    # Remove '/' from start of path if it is present
+    dir_struct_file = dir_struct_file[1:] if dir_struct_file[0] == '/' else dir_struct_file
+    dir_struct_file = Path(dir_struct_file)
+
+    if not os.path.exists(os.path.join(root_dir, dir_struct_file)):
         print(f'File {dir_struct_file} does not exist')
         return None
     try:
-        with open('{}{}'.format(root_dir, dir_struct_file), 'r') as f:
+        with open(os.path.join(root_dir, dir_struct_file), 'r') as f:
             dir_struct = json.load(f)
             print(f'Loaded structure from {dir_struct_file}')
     except Exception as e:
@@ -87,24 +95,31 @@ def copy_read_doc_dir(root_dir, documentation_dir, working_dir='/tmp/input_files
         load_struct (str):       (Optional) If True, the structure of the documentation directory is loaded from a file if it exists. Default is True
 
     Returns:
-        None
+        (list, dict):            List of all files in the directory, structure of the directory
+        (str):                   Tree structure representation of the directory
     """
 
+    # documentation_dir = r"{}".format(documentation_dir)
+    documentation_dir = Path(documentation_dir)
+
     # Add '/' to start of paths if it is not present
-    working_dir = '/{}'.format(working_dir) if working_dir[0] != '/' else working_dir
+    # working_dir = '/{}'.format(working_dir) if working_dir[0] != '/' else working_dir
+    # Remove '/' from start of paths if it is present
+    working_dir = working_dir[1:] if working_dir[0] == '/' else working_dir
+    working_dir = Path(working_dir)
 
     # Remove processed_dir and all its contents if it exists if clear_dir is set to True
     if clear_dir == True:
         print(f'Clearing {working_dir}')
-        if os.path.exists('{}{}'.format(root_dir, working_dir)):
-            shutil.rmtree('{}{}'.format(root_dir, working_dir), ignore_errors=True)
+        if os.path.exists(os.path.join(root_dir, working_dir)):
+            shutil.rmtree(os.path.join(root_dir, working_dir), ignore_errors=True)
     # Create processed_dir directory
-    if not os.path.exists('{}{}'.format(root_dir, working_dir)):
+    if not os.path.exists(os.path.join(root_dir, working_dir)):
         print(f'Creating {working_dir}')
-        os.makedirs('{}{}'.format(root_dir, working_dir), exist_ok=True)
+        os.makedirs(os.path.join(root_dir, working_dir), exist_ok=True)
     # Copy documentation directory contents to working_dir
     print(f'Copying files:\n    from {documentation_dir}\n    to {working_dir}')
-    shutil.copytree(documentation_dir, '{}{}'.format(root_dir, working_dir), dirs_exist_ok=overwrite)
+    shutil.copytree(f'{'\\\\?\\' if is_windows == True else ''}{documentation_dir}', f'{'\\\\?\\' if is_windows == True else ''}{os.path.join(root_dir, working_dir)}', dirs_exist_ok=overwrite, symlinks=True)
     print('Copy complete')
     # Form a tree structure of the documentation directory
     # Try to load saved structure of the documentation directory if load_struct is set to True
@@ -114,9 +129,9 @@ def copy_read_doc_dir(root_dir, documentation_dir, working_dir='/tmp/input_files
     # Otherwise, form a tree structure of the documentation directory
     if dir_struct == None:
         print('Saved structure of the documentation directory not loaded. Forming a new structure...')
-    dir_tree = util.print_save_tree(root_dir=root_dir, dir_path='{}{}'.format(root_dir, working_dir))
+    dir_tree = util.print_save_tree(root_dir=root_dir, dir_path=os.path.join(root_dir, working_dir))
     # Read structure of the documentation directory
-    doc_structure = list_dir(root_dir=root_dir, dir_to_list='{}{}'.format(root_dir, working_dir), dir_tree=dir_tree, save_struct=True)
-    return doc_structure, dir_tree
+    doc_structure_dict, doc_structure_tree = list_dir(root_dir=root_dir, dir_to_list=os.path.join(root_dir, working_dir), dir_tree=dir_tree, save_struct=True)
+    return doc_structure_dict, dir_tree
 
 
