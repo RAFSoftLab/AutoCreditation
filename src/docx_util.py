@@ -1,4 +1,6 @@
 """
+Docx utility functions.
+- Find hyperlinks in .docx files using the docx library
 """
 
 from pathlib import Path

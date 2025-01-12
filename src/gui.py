@@ -339,7 +339,7 @@ class Worker(QObject):
         self.progress_bar_value.emit(0 if self.clean_tmp == False else 10, 'Copying documentation files and reading directory structure...')
         # TODO: main script
         # Directory reading
-        doc_structure, dir_tree = directory_reading.copy_read_doc_dir(root_dir=self.root_dir, documentation_dir=self.doc_dir, clear_dir=self.clean_tmp, overwrite=True, load_struct=True)
+        doc_structure, dir_tree, files_dir = directory_reading.copy_read_doc_dir(root_dir=self.root_dir, documentation_dir=self.doc_dir, clear_dir=self.clean_tmp, overwrite=True, load_struct=True)
         self.updated_results.emit({'Documentation directory structure': doc_structure})
         # Finding main documentation file
         self.progress_bar_value.emit(30, 'Finding main documentation file...')

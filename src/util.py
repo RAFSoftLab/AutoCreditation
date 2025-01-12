@@ -1,3 +1,16 @@
+"""
+Utility functions.
+- Clearing /tmp directory
+- Removing special characters from the given name
+- Creating a tree structure from a given directory
+- Printing and saving tree structure
+- Reading directory structure and saving it as a .json file
+- Finding main documentation file in the given list of files
+- Finding hyperlinks in .md files
+- Extracting paths from hyperlinks
+- Verifying hyperlinks paths exist
+"""
+
 import json
 import os
 from pathlib import Path

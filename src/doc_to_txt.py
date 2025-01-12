@@ -6,7 +6,12 @@ import os
 from pathlib import Path
 import shutil
 import docx
-# import textract
+
+try:
+    from doc2docx import convert
+except ImportError:
+    print('doc2docx library not found. Installing...')
+    os.system('pip install doc2docx')
 from doc2docx import convert
 
 import src.cyrillyc_to_latin as cyrillic_to_latin

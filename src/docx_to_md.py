@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import re
 import mammoth
-from markitdown import MarkItDown
+
 
 
 
@@ -31,17 +31,18 @@ def convert_docx_file(root_dir, docx_path, file_name='', processed_dir='/tmp/con
 
     file_ext = '.{}'.format('html' if output_format == 'html' else 'md' if output_format == 'md' else 'txt')
     file_name = os.path.join(root_dir, processed_dir, f"{file_name}{file_ext}") if file_name != '' else os.path.join(root_dir, processed_dir, docx_path.split(os.sep)[-1].replace('.docx', '').replace('.doc', ''), file_ext)
+    file_path = docx_path if os.path.exists(docx_path) else os.path.join(root_dir, docx_path)
 
     # Convert .docx file to .html
     if output_format == 'html':
-        with open(os.path.join(root_dir, docx_path), 'rb') as f:
+        with open(file_path, 'rb') as f:
             res = mammoth.convert_to_html(f)
             html = res.value
             with open(file_name, 'w', encoding='utf-8') as f:
                 f.write(html)
     # Convert .docx file to .md
     if output_format == 'md':
-        with open(os.path.join(root_dir, docx_path), 'rb') as f:
+        with open(file_path, 'rb') as f:
             res = mammoth.convert_to_markdown(f)
             md = res.value
             # md_no_img = re.sub(r'\_\_\!\[\]\(data\:image*+\)\_\_', '', md)
@@ -64,7 +65,7 @@ def convert_docx_file(root_dir, docx_path, file_name='', processed_dir='/tmp/con
                 f.write(md_no_img)
     # Convert .docx file to .txt
     if output_format == 'txt':
-        with open(os.path.join(root_dir, docx_path), 'rb') as f:
+        with open(file_path, 'rb') as f:
             res = mammoth.extract_raw_text(f)
             txt = res.value
             with open(file_name, 'w', encoding='utf-8') as f:
@@ -88,6 +89,13 @@ def convert_markitdown(root_dir, docx_path, file_name='', processed_dir='/tmp/co
         (str):                   Path to the converted file
     """
 
+    try:
+        from markitdown import MarkItDown
+    except ImportError:
+        print('markitdown library not found. Installing...')
+        os.system('pip install markitdown')
+    from markitdown import MarkItDown
+
     # Add '/' to start of paths if it is not present
     # docx_path = '/{}'.format(docx_path) if docx_path[0] != '/' else docx_path
     # processed_dir = '/{}'.format(processed_dir) if processed_dir[0] != '/' else processed_dir
@@ -96,6 +104,8 @@ def convert_markitdown(root_dir, docx_path, file_name='', processed_dir='/tmp/co
     docx_path = Path(docx_path)
     processed_dir = processed_dir[1:] if processed_dir[0] in [os.sep, '/'] else processed_dir
     processed_dir = Path(processed_dir)
+
+    file_path = docx_path if os.path.exists(docx_path) else os.path.join(root_dir, docx_path)
 
     # Remove processed_dir and all its contents if it exists if clear_dir is set to True
     if clear_dir == True:
@@ -110,7 +120,7 @@ def convert_markitdown(root_dir, docx_path, file_name='', processed_dir='/tmp/co
 
 
     markitdown = MarkItDown()
-    result = markitdown.convert(os.path.join(root_dir, docx_path))
+    result = markitdown.convert(file_path)
     print(result.text_content)
 
     with open(file_name, 'w', encoding='utf-8') as f:

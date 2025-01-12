@@ -43,14 +43,10 @@ Automated reading and checkup of university acreditation documentation files.
   | _DEPENDENCY_ | _PIP_ | _CONDA_ |
   | :----------: | :---: | :-----: |
   | docx | pip install python-docx | conda install conda-forge::python-docx |
-  | aspose-words | pip install aspose-words | :x: |
-  | PyQt5 | pip install PyQt5 | :x: |
+  | PyQt5 | pip install PyQt5 | conda install conda-forge::pyqt |
   | pyqtspinner | pip install pyqtspinner | :x: |
-  <!-- | doc2docx | pip install doc2docx | :x: |  -->
-  <!-- ??? -->
-  <!-- | textract | pip install textract | conda install conda-forge::textract | -->
-  <!-- | tabula-py | pip install tabula-py | conda install conda-forge::tabula-py | -->
-  <!-- | antiword | pip install antiword | conda install r::r-antiword | -->
+  | mammoth | pip install mammoth | conda install auto::mammoth |
+  ---
 
 
 ## Running the project

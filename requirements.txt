@@ -1,7 +1,9 @@
 python-docx
-aspose-words
+mammoth
 PyQt5
 pyqtspinner
+# aspose-words
+# markitdown
 # textract
 # antiword
 # doc2docx
