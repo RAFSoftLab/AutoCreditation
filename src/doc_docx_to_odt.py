@@ -1,7 +1,14 @@
 import os
 from pathlib import Path
 import shutil
+
+try:
+    import aspose.words as aw
+except ImportError:
+    print('aspose-words library not found. Installing...')
+    os.system('pip install aspose-words')
 import aspose.words as aw
+
 
 
 def convert_to_odt(root_dir, docx_path, file_name='', processed_dir='/tmp/converted_documents/', clear_dir=False, rename_temp_files=False):

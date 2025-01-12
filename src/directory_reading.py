@@ -97,6 +97,7 @@ def copy_read_doc_dir(root_dir, documentation_dir, working_dir='/tmp/input_files
     Returns:
         (list, dict):            List of all files in the directory, structure of the directory
         (str):                   Tree structure representation of the directory
+        (str):                   Absolute path to the working directory (where the copied documentation directory is saved)
     """
 
     # documentation_dir = r"{}".format(documentation_dir)
@@ -132,6 +133,6 @@ def copy_read_doc_dir(root_dir, documentation_dir, working_dir='/tmp/input_files
     dir_tree = util.print_save_tree(root_dir=root_dir, dir_path=os.path.join(root_dir, working_dir))
     # Read structure of the documentation directory
     doc_structure_dict, doc_structure_tree = list_dir(root_dir=root_dir, dir_to_list=os.path.join(root_dir, working_dir), dir_tree=dir_tree, save_struct=True)
-    return doc_structure_dict, dir_tree
+    return doc_structure_dict, dir_tree, os.path.join(root_dir, working_dir)
 
 
