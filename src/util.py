@@ -114,7 +114,7 @@ def print_save_tree(root_dir, formed_tree='', dir_path='', save_dir='', print_tr
         (str):                  Formed tree structure as a string
     '''
 
-    save_dir = '{}{}'.format(root_dir, '/tmp') if save_dir != '' else ''
+    save_dir = os.path.join(root_dir, Path('tmp')) if save_dir != '' else save_dir
 
     # If formed_tree is not passed, tree is generated for the given dir_path directory and saved as a .txt file in the save_dir directory
     if formed_tree == '':
@@ -147,7 +147,7 @@ def dir_struct(doc_dir, process_names=False):
         dir_struct (dict):       Dictionary representing directory: {'name': <name of the file/directory>, 'processed_name': <name with special characters removed>, 'type': <"file" or "directory">, 'path': <path to file/directory>, 'contents': <for directories only (else empty): list of all files in the directory>}
     """
 
-    name = doc_dir.split('/')[-1]
+    name = doc_dir.split(os.sep)[-1]
     type = 'directory' if os.path.isdir(doc_dir) else 'file'
     processed_name = util.process_name(name=name, file=True if type == 'file' else False) if process_names == True else name
     path = doc_dir
@@ -158,13 +158,13 @@ def dir_struct(doc_dir, process_names=False):
     for dir_item in os.listdir(doc_dir):
         if dir_item == '.DS_Store':
             continue
-        if os.path.isfile('{}/{}'.format(doc_dir, dir_item)):
+        if os.path.isfile(os.path.join(doc_dir, dir_item)):
             contents.append({'name': dir_item,
                                     'processed_name': util.process_name(name=dir_item, file=True) if process_names == True else dir_item,
                                     'type': 'file',
-                                    'path': '{}/{}'.format(doc_dir, dir_item),
+                                    'path': os.path.join(doc_dir, dir_item),
                                     'contents': []})
             continue
-        contents.append(dir_struct('{}/{}'.format(doc_dir, dir_item), process_names=process_names))
+        contents.append(dir_struct(os.path.join(doc_dir, dir_item), process_names=process_names))
     return {'name': name, 'processed_name': processed_name, 'type': type, 'path': doc_dir, 'contents': contents}
 # TODO: rename files while reading structure, if process_names is True

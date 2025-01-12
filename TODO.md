@@ -19,15 +19,15 @@
 
 # gui
 
-  - [ ] Create gui window
-  - [ ] Files directory input
-  - [ ] Conversion button
-  - [ ] Output directory input
+  - [x] Create gui window
+  - [x] Files directory input
+  - [x] Run button
+  - [ ] Output directory input???
   - [ ] Conversion options
-    - [ ] Clear output directory
-  - [ ] Conversion progress display
-    - [ ] Output text
-    - [ ] Progress bar
+    - [x] Clear output directory
+  - [x] Conversion progress display
+    - [x] Output text
+    - [x] Progress bar
 
 
 # tests
