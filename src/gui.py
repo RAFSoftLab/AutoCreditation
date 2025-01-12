@@ -14,10 +14,13 @@ from PyQt5.QtGui import QPixmap, QFont
 import PyQt5.QtGui as QtGui
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QDesktopWidget, QMessageBox, QTextEdit, QWidget, QLabel, QComboBox
 # TODO Remove after debugging:
-# import debugpy
+import debugpy
 from pyqtspinner.spinner import WaitingSpinner
 
 import src.directory_reading as directory_reading
+import src.util as util
+import src.docx_to_md as docx_to_md
+import src.cyrillyc_to_latin as cyrillic_to_latin
 
 dirName = os.path.dirname(__file__)
 
@@ -47,6 +50,8 @@ class MainWindow(QMainWindow):
 
         self.root_dir = root_dir
         self.doc_dir = doc_dir
+        # TODO: remove after testing:
+        self.doc_dir = r'C:\Users\steva\Downloads\Softversko inzenjerstvo (OAS) - original-20241120T100738Z-001\Softversko inzenjerstvo (OAS) - original'
         self.valid_doc_dir = False
         self.clean_tmp = True
         self.output_text = ''
@@ -95,7 +100,8 @@ class MainWindow(QMainWindow):
         self.clean_tmp_checkbox.setText("Clean /tmp directory")
         self.clean_tmp_checkbox.adjustSize()
         self.clean_tmp_checkbox.setToolTip("Clean the /tmp directory before running the application.")
-        self.clean_tmp_checkbox.move(660, 35)
+        self.clean_tmp_checkbox.move(660, 30)
+        self.clean_tmp_checkbox.setFixedHeight(self.choose_doc_dir_button.height())
         self.clean_tmp_checkbox.setChecked(True)
         self.clean_tmp_checkbox.clicked.connect(self.update_clean_tmp)
 
@@ -157,7 +163,8 @@ class MainWindow(QMainWindow):
         Open a file dialog to choose a documentation directory.
         """
         doc_dir = QtWidgets.QFileDialog.getExistingDirectory(self, "Select folder")
-        self.update_doc_dir_text_line(doc_dir)
+        if doc_dir != '':
+            self.update_doc_dir_text_line(doc_dir)
 
     def update_valid_doc_dir(self):
         """
@@ -187,7 +194,7 @@ class MainWindow(QMainWindow):
         """
         Clean the /tmp directory.
         """
-        self.clean_tmp = self.clean_tmp_checkbox.isChecked()
+        self.clean_tmp = True if self.clean_tmp_checkbox.isChecked() else False
 
     @pyqtSlot(bool)
     def setProgressBarVisible(self, visible):
@@ -235,7 +242,17 @@ class MainWindow(QMainWindow):
                     self.output_text += '\n- - - {}: \n{}\n- - -\n'.format(key, json.dumps(results[key], indent=4))
                     continue
                 if type(results[key]) == list:
-                    self.output_text += '\n- - - {}: \n{}\n- - -\n'.format(key, '\n'.join(results[key]))
+                    items_list = []
+                    for item in results[key]:
+                        if type(item) == str:
+                            items_list.append(item)
+                        elif type(item) == dict:
+                            items_list.append(json.dumps(item, indent=4))
+                        elif type(item) == list:
+                            items_list.append('\n'.join(item))
+                        else:
+                            items_list.append(str(item))
+                    self.output_text += '\n- - - {}: \n{}\n- - -\n'.format(key, '\n'.join(items_list))
                     continue
                 self.output_text += '\n{}'.format(str(results[key]))
             self.results_text_area.setText(self.output_text)
@@ -282,7 +299,9 @@ class MainWindow(QMainWindow):
         self.thread.started.connect(self.worker.run)
         self.worker.progress_bar_visibility.connect(self.setProgressBarVisible)
         self.worker.progress_bar_value.connect(self.setProgressBarValue)
-        self.worker.finished.connect(self.update_results)
+        self.worker.updated_results.connect(self.update_results)
+        # TODO: new window for final results
+        # self.worker.finished.connect(self.update_results)
         self.worker.finished.connect(self.thread.quit)
         self.worker.finished.connect(self.finished_run)
         self.thread.start()
@@ -297,31 +316,69 @@ class Worker(QObject):
     Worker thread for the application.
     """
     # TODO Remove after debugging:
-    # debugpy.debug_this_thread()
+    debugpy.debug_this_thread()
     finished = pyqtSignal(dict)
     progress_bar_visibility = pyqtSignal(bool)
     progress_bar_value = pyqtSignal(int, str)
+    updated_results = pyqtSignal(dict)
+    update_errors = pyqtSignal(list)
     def setInput(self, root_dir, doc_dir, clean_tmp):
         self.root_dir = root_dir
         self.doc_dir = doc_dir
         self.clean_tmp = clean_tmp
         self.resultData = {}
+        self.errors = []
 
     def run(self):
         print("Running main script...")
         self.progress_bar_visibility.emit(True)
-        self.progress_bar_value.emit(0, 'Copying documentation files and reading directory structure...')
+        if self.clean_tmp == True:
+            self.progress_bar_value.emit(0, 'Clearing /tmp directory...')
+            util.clear_tmp_dir(root_dir=self.root_dir)
+            print('Cleared /tmp directory')
+        self.progress_bar_value.emit(0 if self.clean_tmp == False else 10, 'Copying documentation files and reading directory structure...')
         # TODO: main script
         # Directory reading
         doc_structure, dir_tree = directory_reading.copy_read_doc_dir(root_dir=self.root_dir, documentation_dir=self.doc_dir, clear_dir=self.clean_tmp, overwrite=True, load_struct=True)
+        self.updated_results.emit({'Documentation directory structure': doc_structure})
+        # Finding main documentation file
+        self.progress_bar_value.emit(30, 'Finding main documentation file...')
+        files_in_doc_dir = [i for i in doc_structure['contents'] if i['type'] == 'file']
+        self.updated_results.emit({'Files in root directory: ': '\n'.join([i['name'] for i in files_in_doc_dir])})
+        print("Files in documentation root directory:")
+        for i in files_in_doc_dir:
+            print(i['name'])
+        main_doc = util.find_main_doc(docs=files_in_doc_dir)
+        self.updated_results.emit({'Main document: ': main_doc['name']})
+        print(f"Main documentation file: {main_doc['name']}")
         # Reading main documentation file
-        self.progress_bar_value.emit(30, 'Reading main documentation file...')
+        self.progress_bar_value.emit(40, 'Converting main documentation file to .md...')
+        md_file = docx_to_md.convert_docx_file(root_dir=self.root_dir, docx_path=main_doc['path'], file_name='main_doc', processed_dir=Path('tmp/converted_documents'), clear_dir=True, output_format='md')
+        self.updated_results.emit({'Main documentation file converted to .md: ': md_file})
+        # self.updated_results.emit(md_file)
+        print(f'Main documentation file converted to .md: {md_file}')
+        # Reading converted file and converting cyrillic characters to latin characters
+        self.progress_bar_value.emit(50, 'Reading converted file and converting cyrillic characters to latin characters...')
+        with open(md_file, 'r', encoding='utf-8') as f:
+            md_file_txt = f.read()
+            md_file_txt = cyrillic_to_latin.cyrillic_to_latin(md_file_txt)
+        md_file_lat = md_file.replace('.md', '_lat.md')
+        with open(md_file_lat, 'w', encoding='utf-8') as f:
+            f.write(md_file_txt)
+        self.progress_bar_value.emit(60, 'Finding hyperlinks to files...')
+        found_hyperlinks = util.find_link_tags(root_dir=self.root_dir, md_file_txt=md_file_txt)
+        print(f"Found hyperlinks: \n{json.dumps(found_hyperlinks, indent=4)}")
+        self.updated_results.emit({'Found hyperlinks': found_hyperlinks})
+        # Verify hyperlinks files exist
+        self.progress_bar_value.emit(70, 'Verifying hyperlinks files exist...')
+        unmatched_hyperlinks = util.verify_hyperlinks(root_dir=self.root_dir, found_hyperlinks=found_hyperlinks)
+        print(f"Unmatched hyperlinks: \n{json.dumps(unmatched_hyperlinks, indent=4)}")
+        self.updated_results.emit({'Unmatched hyperlinks': unmatched_hyperlinks if len(unmatched_hyperlinks) > 0 else 'All hyperlinks verified'})
+        # TODO: file verification (file content)
 
-        # TODO: remove after testing
-        time.sleep(5)
 
-        self.resultData["doc_structure"] = doc_structure
-        self.resultData["dir_tree"] = dir_tree
+
+
         print("Script finished.")
         self.progress_bar_visibility.emit(False)
         self.finished.emit(self.resultData)

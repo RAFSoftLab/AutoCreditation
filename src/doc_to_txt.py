@@ -3,6 +3,7 @@ Reading of .docx files and converting them to .txt files, with conversion of cyr
 '''
 
 import os
+from pathlib import Path
 import shutil
 import docx
 # import textract
@@ -30,32 +31,37 @@ def convert_doc_to_txt_docx(root_dir, docx_path, file_name, processed_dir='/tmp/
 
 
     # Add '/' to start of paths if it is not present
-    docx_path = '/{}'.format(docx_path) if docx_path[0] != '/' else docx_path
-    processed_dir = '/{}'.format(processed_dir) if processed_dir[0] != '/' else processed_dir
+    # docx_path = '/{}'.format(docx_path) if docx_path[0] != '/' else docx_path
+    # processed_dir = '/{}'.format(processed_dir) if processed_dir[0] != '/' else processed_dir
+    # Remove '/' from the start of paths if it is present
+    docx_path = docx_path[1:] if docx_path[0] in [os.sep, '/'] else docx_path
+    docx_path = Path(docx_path)
+    processed_dir = processed_dir[1:] if processed_dir[0] in [os.sep, '/'] else processed_dir
+    processed_dir = Path(processed_dir)
 
     # Remove processed_dir and all its contents if it exists if clear_dir is set to True
     if clear_dir == True:
-        if os.path.exists('{}{}'.format(root_dir, processed_dir)):
-            os.system('rm -rf {}'.format('{}{}'.format(root_dir, processed_dir)))
+        if os.path.exists(os.path.join(root_dir, processed_dir)):
+            os.system('rm -rf {}'.format(os.path.join(root_dir, processed_dir)))
     # Create processed_dir directory
-    if not os.path.exists('{}{}'.format(root_dir, processed_dir)):
-        os.makedirs('{}{}'.format(root_dir, processed_dir), exist_ok=True)
+    if not os.path.exists(os.path.join(root_dir, processed_dir)):
+        os.makedirs(os.path.join(root_dir, processed_dir), exist_ok=True)
 
     # Name of the file to be converted cannot contain spaces, parentheses, or dashes. Replace all special characters with underscores.
     # tmpFile = '{}{}{}'.format(root_dir, processed_dir, docx_path.split('/')[-1].replace(' ', '_').replace('(', '_').replace(')', '_').replace('-', '_'))
-    tmpFile = '{}{}{}'.format(root_dir, processed_dir, util.process_name(docx_path.split('/')[-1], file=True))
-    shutil.copyfile('{}{}'.format(root_dir, docx_path), tmpFile)
+    tmpFile = os.path.join(root_dir, processed_dir, util.process_name(docx_path.split(os.sep)[-1], file=True))
+    shutil.copyfile(os.path.join(root_dir, docx_path), tmpFile)
 
     doc_to_docx_file = ''
     # Convert .doc to .docx if necessary
     # using doc2docx
     if tmpFile[-4:] == '.doc':
-        doc_to_docx_file = '/tmp/temp_docx_file.docx'
+        doc_to_docx_file = Path('tmp/temp_docx_file.docx')
         # doc_to_docx_file = doc_to_docx_file.replace('/tmp/', '/tmp/converted_documents/')
-        if not os.path.exists('{}{}'.format(root_dir, doc_to_docx_file)):
-            os.makedirs('{}{}'.format(root_dir, '/'.join(doc_to_docx_file.split('/')[:-1])), exist_ok=True)
+        if not os.path.exists(os.path.join(root_dir, doc_to_docx_file)):
+            os.makedirs(os.path.join(root_dir, os.path.join(doc_to_docx_file.split(os.sep)[:-1])), exist_ok=True)
         try:
-            convert(tmpFile, '{}{}'.format(root_dir, doc_to_docx_file))
+            convert(tmpFile, os.path.join(root_dir, doc_to_docx_file))
         except:
             print('Conversion failed')
             return None
@@ -63,7 +69,7 @@ def convert_doc_to_txt_docx(root_dir, docx_path, file_name, processed_dir='/tmp/
     # TODO
 
     # Open .docx file
-    doc = docx.Document('{}{}'.format(root_dir, docx_path if doc_to_docx_file == '' else doc_to_docx_file))
+    doc = docx.Document(os.path.join(root_dir, docx_path if doc_to_docx_file == '' else doc_to_docx_file))
 
 
     if data_types == ['text', 'tables']:
@@ -103,11 +109,11 @@ def convert_doc_to_txt_docx(root_dir, docx_path, file_name, processed_dir='/tmp/
     # with open('{}{}/{}.txt'.format(root_dir, processed_dir, '{}_orig'.format(file_name)), 'w', encoding='utf-8') as f:
     #     f.write(newTxtFile_orig)
     # file with cyrillic characters replaced with latin characters:
-    with open('{}{}/{}.txt'.format(root_dir, processed_dir, file_name), 'w', encoding='utf-8') as f:
+    with open('{}.txt'.format(os.path.join(root_dir, processed_dir, file_name)), 'w', encoding='utf-8') as f:
         f.write(newTxtFile)
 
     # Save tables as .txt file
-    with open('{}{}/{}.txt'.format(root_dir, processed_dir, '{}_tables'.format(file_name)), 'w', encoding='utf-8') as f:
+    with open('{}.txt'.format(os.path.join(root_dir, processed_dir, '{}_tables'.format(file_name))), 'w', encoding='utf-8') as f:
         f.write(newTxtFile_tables)
 
     # Remove temporary file

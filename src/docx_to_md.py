@@ -1,4 +1,6 @@
 import os
+from pathlib import Path
+import re
 import mammoth
 from markitdown import MarkItDown
 
@@ -9,37 +11,60 @@ def convert_docx_file(root_dir, docx_path, file_name='', processed_dir='/tmp/con
     """
 
     # Add '/' to start of paths if it is not present
-    docx_path = '/{}'.format(docx_path) if docx_path[0] != '/' else docx_path
-    processed_dir = '/{}'.format(processed_dir) if processed_dir[0] != '/' else processed_dir
+    # docx_path = '/{}'.format(docx_path) if docx_path[0] != '/' else docx_path
+    # processed_dir = '/{}'.format(processed_dir) if processed_dir[0] != '/' else processed_dir
+    # Remove '/' from the start of paths if it is present
+    if type(docx_path) == str:
+        docx_path = docx_path[1:] if docx_path[0] in [os.sep, '/'] else docx_path
+        docx_path = Path(docx_path)
+    if type(processed_dir) == str:
+        processed_dir = processed_dir[1:] if processed_dir[0] in [os.sep, '/'] else processed_dir
+        processed_dir = Path(processed_dir)
 
     # Remove processed_dir and all its contents if it exists if clear_dir is set to True
     if clear_dir == True:
-        if os.path.exists('{}{}'.format(root_dir, processed_dir)):
-            os.system('rm -rf {}'.format('{}{}'.format(root_dir, processed_dir)))
+        if os.path.exists(os.path.join(root_dir, processed_dir)):
+            os.system('rm -rf {}'.format(os.path.join(root_dir, processed_dir)))
     # Create processed_dir directory
-    if not os.path.exists('{}{}'.format(root_dir, processed_dir)):
-        os.makedirs('{}{}'.format(root_dir, processed_dir), exist_ok=True)
+    if not os.path.exists(os.path.join(root_dir, processed_dir)):
+        os.makedirs(os.path.join(root_dir, processed_dir), exist_ok=True)
 
     file_ext = '.{}'.format('html' if output_format == 'html' else 'md' if output_format == 'md' else 'txt')
-    file_name = '{}{}{}{}'.format(root_dir, processed_dir, file_name, file_ext) if file_name != '' else '{}{}{}{}'.format(root_dir, processed_dir, docx_path.split('/')[-1].replace('.docx', '').replace('.doc', ''), file_ext)
+    file_name = os.path.join(root_dir, processed_dir, f"{file_name}{file_ext}") if file_name != '' else os.path.join(root_dir, processed_dir, docx_path.split(os.sep)[-1].replace('.docx', '').replace('.doc', ''), file_ext)
 
     # Convert .docx file to .html
     if output_format == 'html':
-        with open('{}{}'.format(root_dir, docx_path), 'rb') as f:
+        with open(os.path.join(root_dir, docx_path), 'rb') as f:
             res = mammoth.convert_to_html(f)
             html = res.value
             with open(file_name, 'w', encoding='utf-8') as f:
                 f.write(html)
     # Convert .docx file to .md
     if output_format == 'md':
-        with open('{}{}'.format(root_dir, docx_path), 'rb') as f:
+        with open(os.path.join(root_dir, docx_path), 'rb') as f:
             res = mammoth.convert_to_markdown(f)
             md = res.value
+            # md_no_img = re.sub(r'\_\_\!\[\]\(data\:image*+\)\_\_', '', md)
+            md_no_img = ''
+            for line in md.split('\n'):
+                in_img = False
+                last_img_line = False
+                if in_img == False and re.search(r'\_\_\!\[\]\(data\:image', line):
+                    in_img = True
+                    continue
+                if in_img == True and re.search(r'\)\_\_', line):
+                    last_img_line = True
+                    continue
+                if last_img_line == True:
+                    in_img = False
+                    last_img_line = False
+                    continue
+                md_no_img += line + '\n'
             with open(file_name, 'w', encoding='utf-8') as f:
-                f.write(md)
+                f.write(md_no_img)
     # Convert .docx file to .txt
     if output_format == 'txt':
-        with open('{}{}'.format(root_dir, docx_path), 'rb') as f:
+        with open(os.path.join(root_dir, docx_path), 'rb') as f:
             res = mammoth.extract_raw_text(f)
             txt = res.value
             with open(file_name, 'w', encoding='utf-8') as f:
@@ -50,26 +75,42 @@ def convert_docx_file(root_dir, docx_path, file_name='', processed_dir='/tmp/con
 
 def convert_markitdown(root_dir, docx_path, file_name='', processed_dir='/tmp/converted_documents/', clear_dir=False):
     """
+    Converts .docx file to .md file using markitdown library.
+
+    Args:
+        root_dir (str):          Root directory of the project, absolute path
+        docx_path (str):         Relative path to the docx file from the root directory
+        file_name (str):         (Optional) Name of the converted text file (without extension). If not specified, input file name is used. Default is ''
+        processed_dir (str):     (Optional) Relative path to the directory where the converted txt files will be saved, from the root directory. Default is '/tmp/converted_documents/'
+        clear_dir (str):         (Optional) If True, clears the processed_dir directory before converting. Default is False
+
+    Returns:
+        (str):                   Path to the converted file
     """
 
     # Add '/' to start of paths if it is not present
-    docx_path = '/{}'.format(docx_path) if docx_path[0] != '/' else docx_path
-    processed_dir = '/{}'.format(processed_dir) if processed_dir[0] != '/' else processed_dir
+    # docx_path = '/{}'.format(docx_path) if docx_path[0] != '/' else docx_path
+    # processed_dir = '/{}'.format(processed_dir) if processed_dir[0] != '/' else processed_dir
+    # Remove '/' from the start of paths if it is present
+    docx_path = docx_path[1:] if docx_path[0] in [os.sep, '/'] else docx_path
+    docx_path = Path(docx_path)
+    processed_dir = processed_dir[1:] if processed_dir[0] in [os.sep, '/'] else processed_dir
+    processed_dir = Path(processed_dir)
 
     # Remove processed_dir and all its contents if it exists if clear_dir is set to True
     if clear_dir == True:
-        if os.path.exists('{}{}'.format(root_dir, processed_dir)):
-            os.system('rm -rf {}'.format('{}{}'.format(root_dir, processed_dir)))
+        if os.path.exists(os.path.join(root_dir, processed_dir)):
+            os.system('rm -rf {}'.format(os.path.join(root_dir, processed_dir)))
     # Create processed_dir directory
-    if not os.path.exists('{}{}'.format(root_dir, processed_dir)):
-        os.makedirs('{}{}'.format(root_dir, processed_dir), exist_ok=True)
+    if not os.path.exists(os.path.join(root_dir, processed_dir)):
+        os.makedirs(os.path.join(root_dir, processed_dir), exist_ok=True)
 
     file_ext = '.md'
-    file_name = '{}{}{}{}'.format(root_dir, processed_dir, file_name, file_ext) if file_name != '' else '{}{}{}{}'.format(root_dir, processed_dir, docx_path.split('/')[-1].replace('.docx', '').replace('.doc', ''), file_ext)
+    file_name = os.path.join(root_dir, processed_dir, f"{file_name}{file_ext}") if file_name != '' else os.path.join(root_dir, processed_dir, f"{docx_path.split(os.sep)[-1].replace('.docx', '').replace('.doc', '')}{file_ext}")
 
 
     markitdown = MarkItDown()
-    result = markitdown.convert('{}{}'.format(root_dir, docx_path))
+    result = markitdown.convert(os.path.join(root_dir, docx_path))
     print(result.text_content)
 
     with open(file_name, 'w', encoding='utf-8') as f:

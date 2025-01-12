@@ -1,11 +1,29 @@
+import json
 import os
 from pathlib import Path
 from itertools import islice
 import re
+import shutil
 
 import src.util as util
+import src.cyrillyc_to_latin as cyrillic_to_latin
+import src.results_save_read as results_save_read
 
 
+def clear_tmp_dir(root_dir):
+    """
+    Clears the /tmp directory.
+
+    Args:
+        root_dir (str):          Root directory of the project, absolute path
+
+    Returns:
+        None
+    """
+
+    tmp_dir = os.path.join(root_dir, Path('tmp'))
+    if os.path.exists(tmp_dir):
+        shutil.rmtree(tmp_dir)
 
 def process_name(name, file=False, skip_ext=True):
     """
@@ -92,10 +110,10 @@ def tree(dir_path: Path, level: int=-1, limit_to_directories: bool=False, length
         try:
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir, exist_ok=True)
-            with open(f'{save_dir}/documentation_tree.txt', 'w') as f:
+            with open(os.path.join(save_dir, Path('documentation_tree.txt')), 'w') as f:
                 f.write(struct_txt)
         except Exception as e:
-            print(f'Error saving tree structure to {save_dir}/documentation_tree.txt:\n    {e}')
+            print(f'Error saving tree structure to {os.path.join(save_dir, Path("documentation_tree.txt"))}:\n    {e}')
     return struct_txt
 
 def print_save_tree(root_dir, formed_tree='', dir_path='', save_dir='', print_tree=True, save_tree=True):
@@ -168,3 +186,162 @@ def dir_struct(doc_dir, process_names=False):
         contents.append(dir_struct(os.path.join(doc_dir, dir_item), process_names=process_names))
     return {'name': name, 'processed_name': processed_name, 'type': type, 'path': doc_dir, 'contents': contents}
 # TODO: rename files while reading structure, if process_names is True
+
+
+def find_main_doc(docs):
+    """
+    Finds the main documentation file in the given list of files.
+
+    Args:
+        docs (list):    List of files
+
+    Returns:
+        (dict):         Main documentation file
+    """
+
+    main_doc = {}
+
+    for doc in docs:
+        if re.search(r'^Dokumentacija', doc['name']):
+            main_doc = doc
+            break
+        if re.search(r'^Dokumentacija', cyrillic_to_latin.cyrillic_to_latin(doc['name'])):
+            main_doc = doc
+            break
+    return main_doc
+
+def find_link_tags(root_dir, md_file_txt):
+    """
+    Finds all link tags in the given .md file.
+
+    Args:
+        root_dir (str):        Root directory of the project, absolute path
+        md_file_txt (str):     .md file content
+
+    Returns:
+        (list):                List of link
+
+    """
+
+    link_tag_lines = []
+    link_tags = []
+
+    for line in md_file_txt.split('\n'):
+        if re.search(r'\(file\:', line):
+            link_tag_lines.append(line)
+
+    # Save link tag lines to a file
+    if not os.path.exists(os.path.join(root_dir, Path('tmp'))):
+        os.makedirs(os.path.join(root_dir, Path('tmp')))
+    with open(os.path.join(root_dir, Path('tmp/link_tags.txt')), 'w', encoding='utf-8') as f:
+        f.write('\n'.join(link_tag_lines))
+
+    found_tags = []
+
+    for line in link_tag_lines:
+        all_line_tags = extract_path_from_tag(line)
+        for tag in all_line_tags:
+            found_tags.append(tag)
+
+    # Save found tags to a file
+    with open(os.path.join(root_dir, Path('tmp/found_file_links.json')), 'w', encoding='utf-8') as f:
+        json.dump(found_tags, f, indent=4)
+
+    return found_tags
+
+def extract_path_from_tag(tag_line):
+    """
+    Extracts the path from the given tag.
+
+    Args:
+        tag_line (str):         Tag line to be processed
+
+    Returns:
+        (str):                  Path extracted from the tag
+    """
+
+    line_tags = []
+
+    all_line_tags = re.findall(r'\[.+\]\(file\:.*?\)[\s$]', tag_line)
+    for tag in all_line_tags:
+        # Remove tag brackets
+        tag_name = re.findall(r'\[.*?\]', tag)[0]
+        tag_name = tag_name[1:] if tag_name[0] == '[' else tag_name
+        tag_name = tag_name[:-1] if tag_name[-1] == ']' else tag_name
+        while tag_name[0] == '_':
+            tag_name = tag_name[1:]
+        while tag_name[-1] == '_':
+            tag_name = tag_name[:-1]
+        tag_name = tag_name.replace('\\', '')
+        if re.search(r'\(file\:.+\.?(pdf|doc|docx)\)', tag):
+            tag_path = re.findall(r'\(file\:.+\.(?:pdf|doc|docx)\)', tag)[0]
+        else:
+            tag_path = re.findall(r'\(file\:.+\)', tag)[0]
+        tag_path = tag_path[6:] if tag_path[0:6] == '(file:' else tag_path
+        tag_path = tag_path[:-1] if tag_path[-1] == ')' else tag_path
+        while tag_path[0] == '/':
+            tag_path = tag_path[1:]
+        # Convert to readable path
+        try:
+            from urllib import unquote
+        except ImportError:
+            from urllib.parse import unquote
+        tag_path = unquote(tag_path)
+        # tag_path = tag_path.replace('nј', 'nj')
+        # Exclude any text after the longest path in string
+        tag_alt_path = ''
+        if not os.path.exists(tag_path):
+            path_found = False
+            path_parent = os.sep.join(tag_path.split(os.sep)[:-1])
+            if os.path.exists(path_parent) and os.path.isdir(path_parent):
+                parent_dir_contents = os.listdir(path_parent)
+                file_name = tag_path.split(os.sep)[-1]
+                for item in parent_dir_contents:
+                    if file_name == cyrillic_to_latin.cyrillic_to_latin(item):
+                        path_found = True
+                        break
+            if path_found == False:
+                tag_path_new = tag_path
+                while len(tag_path_new) > 0:
+                    if os.path.exists(tag_path_new):
+                        tag_alt_path = tag_path_new
+                        break
+                    tag_path_new = tag_path_new[:-1]
+        line_tags.append({'name': tag_name, 'path': tag_path, 'line': tag_line, 'verified_path': tag_alt_path if tag_alt_path != '' else tag_path})
+    return line_tags
+
+def verify_hyperlinks(root_dir, found_hyperlinks):
+    """
+    Verifies if the files listed in the given list of hyperlinks exist.
+
+    Args:
+        root_dir (str):          Root directory of the project, absolute path
+        found_hyperlinks (list): List of hyperlinks
+
+    Returns:
+        (list):                  List of hyperlinks that do not exist
+    """
+
+    unmatched_hyperlinks = []
+    for hyperlink in found_hyperlinks:
+        hyperlink_verified = False
+        # Check if hyperlink path exists
+        if os.path.exists(hyperlink['path']):
+            hyperlink_verified = True
+            continue
+        # Check if parent directory of hyperlink path exists, and check files in that directory
+        parent_dir = os.sep.join(hyperlink['path'].split(os.sep)[:-1])
+        if os.path.exists(parent_dir) and os.path.isdir(parent_dir):
+            parent_dir_contents = os.listdir(parent_dir)
+            file_name = hyperlink['path'].split(os.sep)[-1]
+            for item in parent_dir_contents:
+                if file_name == cyrillic_to_latin.cyrillic_to_latin(item):
+                    hyperlink_verified = True
+                    break
+            if hyperlink_verified == True:
+                continue
+        unmatched_hyperlinks.append(hyperlink)
+    results_save_read.save_results(root_dir=root_dir, results={'unmatched_hyperlinks': unmatched_hyperlinks})
+    return unmatched_hyperlinks
+
+

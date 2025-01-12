@@ -1,4 +1,5 @@
 """
+Run the GUI application.
 """
 
 import os
