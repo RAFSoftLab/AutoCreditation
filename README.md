@@ -87,3 +87,9 @@ Automated reading and checkup of university acreditation documentation files.
         - Progress description
       - Separate thread for running the main application
       - Documentation copying and directory structure reading connected
+  - 0.0.4 - GUI, main document and hyperlink verification
+    - Main document conversion to .md
+      - Conversion of cyrillic characters to latin characters
+    - Reading main document
+    - Finding hyperlinks to files and directories
+    - Verifying hyperlinks paths exist

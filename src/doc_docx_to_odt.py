@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import shutil
 import aspose.words as aw
 
@@ -20,29 +21,34 @@ def convert_to_odt(root_dir, docx_path, file_name='', processed_dir='/tmp/conver
     """
 
     # Add '/' to start of paths if it is not present
-    docx_path = '/{}'.format(docx_path) if docx_path[0] != '/' else docx_path
-    processed_dir = '/{}'.format(processed_dir) if processed_dir[0] != '/' else processed_dir
+    # docx_path = '/{}'.format(docx_path) if docx_path[0] != '/' else docx_path
+    # processed_dir = '/{}'.format(processed_dir) if processed_dir[0] != '/' else processed_dir
+    # Remove '/' from the start of paths if it is present
+    docx_path = docx_path[1:] if docx_path[0] in [os.sep, '/'] else docx_path
+    docx_path = Path(docx_path)
+    processed_dir = processed_dir[1:] if processed_dir[0] in [os.sep, '/'] else processed_dir
+    processed_dir = Path(processed_dir)
 
     # Remove processed_dir and all its contents if it exists if clear_dir is set to True
     if clear_dir == True:
-        if os.path.exists('{}{}'.format(root_dir, processed_dir)):
-            os.system('rm -rf {}'.format('{}{}'.format(root_dir, processed_dir)))
+        if os.path.exists(os.path.join(root_dir, processed_dir)):
+            os.system('rm -rf {}'.format(os.path.join(root_dir, processed_dir)))
     # Create processed_dir directory
-    if not os.path.exists('{}{}'.format(root_dir, processed_dir)):
-        os.makedirs('{}{}'.format(root_dir, processed_dir), exist_ok=True)
+    if not os.path.exists(os.path.join(root_dir, processed_dir)):
+        os.makedirs(os.path.join(root_dir, processed_dir), exist_ok=True)
 
     # Copy docx file to temporary location
     # Rename temporary file if rename_temp_files is set to True
     if rename_temp_files == True:
-        tmpFile = '{}{}{}'.format(root_dir, processed_dir, docx_path.split('/')[-1].replace(' ', '_').replace('(', '_').replace(')', '_').replace('-', '_'))
+        tmpFile = os.path.join(root_dir, processed_dir, docx_path.split(os.sep)[-1].replace(' ', '_').replace('(', '_').replace(')', '_').replace('-', '_'))
     else:
-        tmpFile = '{}{}{}'.format(root_dir, processed_dir, docx_path.split('/')[-1])
-    shutil.copyfile('{}{}'.format(root_dir, docx_path), tmpFile)
+        tmpFile = os.path.join(root_dir, processed_dir, docx_path.split(os.sep)[-1])
+    shutil.copyfile(os.path.join(root_dir, docx_path), tmpFile)
 
     # file_ext = f'.{tmpFile.split('.')[-1]}'
     file_ext = '.{}'.format(tmpFile.split('.')[-1])
     # file_name = f'{file_name}{file_ext}' if file_name != '' else tmpFile.replace(file_ext, '.odt')
-    file_name = '{}{}{}{}'.format(root_dir, processed_dir, file_name, '.odt') if file_name != '' else tmpFile.replace(file_ext, '.odt')
+    file_name = os.path.join(root_dir, processed_dir, f'{file_name}.odt') if file_name != '' else tmpFile.replace(file_ext, '.odt')
 
     # Convert .doc or .docx file to .odt
     doc = aw.Document(tmpFile)

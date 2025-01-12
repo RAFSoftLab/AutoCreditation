@@ -47,7 +47,7 @@ def list_dir(root_dir, dir_to_list='', dir_tree='', save_struct=True):
             with open(os.path.join(root_dir, Path('tmp/documentation_structure.json')), 'w') as f:
                 json.dump(dir_struct, f, indent=4)
         except Exception as e:
-            print(f'Error saving structure to {os.path.join(struct_save_dir, Path('documentation_structure.txt'))}:\n    {e}')
+            print(f'Error saving structure to {os.path.join(struct_save_dir, Path('documentation_structure.json'))}:\n    {e}')
 
     return dir_struct, dir_tree
 
