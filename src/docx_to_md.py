@@ -14,9 +14,9 @@ def convert_docx_file(root_dir, docx_path, file_name='', processed_dir='/tmp/con
     # docx_path = '/{}'.format(docx_path) if docx_path[0] != '/' else docx_path
     # processed_dir = '/{}'.format(processed_dir) if processed_dir[0] != '/' else processed_dir
     # Remove '/' from the start of paths if it is present
-    if type(docx_path) == str:
-        docx_path = docx_path[1:] if docx_path[0] in [os.sep, '/'] else docx_path
-        docx_path = Path(docx_path)
+    # if type(docx_path) == str:
+    #     docx_path = docx_path[1:] if docx_path[0] in [os.sep, '/'] else docx_path
+    #     docx_path = Path(docx_path)
     if type(processed_dir) == str:
         processed_dir = processed_dir[1:] if processed_dir[0] in [os.sep, '/'] else processed_dir
         processed_dir = Path(processed_dir)
