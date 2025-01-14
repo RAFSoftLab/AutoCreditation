@@ -59,28 +59,28 @@ Automated reading and checkup of university acreditation documentation files.
 
   Application can be used by running the `run_app.py` file. GUI is used to select the documentation directory, run the application, and view the results.
 
-    - At the start, path to the documentation directory should be written in the text line, or chosen from the file dialog opend by clicking the "Choose directory" button.
-    - If path in the text line is empty, "No documentation directory selected" label is shown in red colour and the "Run" button is disabled.
+  - At the start, path to the documentation directory should be written in the text line, or chosen from the file dialog opend by clicking the "Choose directory" button.
+  - If path in the text line is empty, "No documentation directory selected" label is shown in red colour and the "Run" button is disabled.
 
-      ![main_window_1](files/images/app_run/app_main_1.png)
+    ![main_window_1](files/images/app_run/app_main_1.png)
 
-    - If path in the text line is not valid, "Invalid directory path" label is shown in red colour and the "Run" button is disabled.
-    - If path in the text line is valid, "Valid directory path" label is shown in green colour and the "Run" button is enabled.
+  - If path in the text line is not valid, "Invalid directory path" label is shown in red colour and the "Run" button is disabled.
+  - If path in the text line is valid, "Valid directory path" label is shown in green colour and the "Run" button is enabled.
 
-      ![main_window_2](files/images/app_run/app_main_2.png)
+    ![main_window_2](files/images/app_run/app_main_2.png)
 
-    - Clicking the "Run" button starts the application.
+  - Clicking the "Run" button starts the application.
 
-      ![main_window_3](files/images/app_run/app_main_3.png)
+    ![main_window_3](files/images/app_run/app_main_3.png)
 
-    - The application run scripts and update the results in the text area.
-    - While the application is running, all elements in the main window are disabled. The "Run" button text is changed to "Running...". Spinner is shown over the results text area. Progress bar is displayed, and information about the progress is shown in the status label.
+  - The application run scripts and update the results in the text area.
+  - While the application is running, all elements in the main window are disabled. The "Run" button text is changed to "Running...". Spinner is shown over the results text area. Progress bar is displayed, and information about the progress is shown in the status label.
 
-      ![main_window_4](files/images/app_run/app_main_4.png)
+    ![main_window_4](files/images/app_run/app_main_4.png)
 
-    - When the application is finished, all elements in the main window are enabled. The "Run" button text is changed to "Run". Spinner is hidden. Progress bar is hidden. Progress description is hidden. Final results are shown in the results text area.
+  - When the application is finished, all elements in the main window are enabled. The "Run" button text is changed to "Run". Spinner is hidden. Progress bar is hidden. Progress description is hidden. Final results are shown in the results text area.
 
-      ![main_window_5](files/images/app_run/app_main_5.png)
+    ![main_window_5](files/images/app_run/app_main_5.png)
 
 # Changelog
 
