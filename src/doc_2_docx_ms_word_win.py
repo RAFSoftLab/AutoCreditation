@@ -3,13 +3,7 @@ Converts .doc file to .docx file using Microsoft Word.
 """
 
 import os
-
-try:
-    from win32com import client as wc
-except ImportError:
-    print('win32com library not found. Installing...')
-    os.system('pip install pywin32')
-from win32com import client as wc
+import sys
 
 
 def doc2docx(doc_path, docx_path):
@@ -22,6 +16,14 @@ def doc2docx(doc_path, docx_path):
     Returns:
         (str):                  Absolute path to the created .docx file
     """
+
+    if sys.platform.startswith('win'):
+        try:
+            from win32com import client as wc
+        except ImportError:
+            print('win32com library not found. Installing...')
+            os.system('pip install pywin32')
+        from win32com import client as wc
 
     # word = wc.DispatchEx("Word.Application")
     word = wc.Dispatch('word.Application')
