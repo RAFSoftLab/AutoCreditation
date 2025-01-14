@@ -394,7 +394,13 @@ class Worker(QObject):
             self.updated_results.emit({'Professors file': professors_file})
             # Verify link to professors file
             self.progress_bar_value.emit(55, 'Verifying professors file link...')
-            if os.path.exists(professors_file['path']):
+            if os.path.exists(professors_file['path']) or os.path.exists(professors_file['path'].replace('.doc', '.docx')):
+                if os.path.exists(professors_file['path'].replace('.doc', '.docx')):
+                    print('Updating professors file path to .docx...')
+                    for indexI, link in enumerate(found_hyperlinks):
+                        if link['path'] == professors_file['path']:
+                            found_hyperlinks[indexI]['path'] = professors_file['path'].replace('.doc', '.docx')
+                            util.update_hyperlinks(root_dir=self.root_dir, new_hyperlinks=found_hyperlinks)
                 self.updated_results.emit({'Professors file link verification': 'File exists'})
                 print(f'Professors file link verified - file found: {professors_file["path"]}')
                 # Read professors file

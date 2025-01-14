@@ -357,4 +357,18 @@ def verify_hyperlinks(root_dir, found_hyperlinks):
     results_save_read.save_results(root_dir=root_dir, results={'unmatched_hyperlinks': unmatched_hyperlinks})
     return unmatched_hyperlinks
 
+def update_hyperlinks(root_dir, new_hyperlinks):
+    """
+    Updates saved hyperlinks (file) with the given list of hyperlinks.
 
+    Args:
+        root_dir (str):          Root directory of the project, absolute path
+        new_hyperlinks (list):   List of hyperlinks
+    Returns:
+        None
+    """
+
+    if not os.path.exists(os.path.join(root_dir, Path('tmp'))):
+        os.makedirs(os.path.join(root_dir, Path('tmp')))
+    with open(os.path.join(root_dir, Path('tmp/found_file_links.json')), 'w', encoding='utf-8') as f:
+        json.dump(new_hyperlinks, f, indent=4)
