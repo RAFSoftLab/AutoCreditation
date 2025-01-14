@@ -251,7 +251,7 @@ def find_link_tags(root_dir, md_file_txt):
 
     found_tags = []
 
-    for line in link_tag_lines:
+    for indexLine, line in enumerate(link_tag_lines):
         all_line_tags = extract_path_from_tag(line)
         for tag in all_line_tags:
             found_tags.append(tag)
@@ -275,7 +275,7 @@ def extract_path_from_tag(tag_line):
 
     line_tags = []
 
-    all_line_tags = re.findall(r'\[.+\]\(file\:.*?\)[\s$]', tag_line)
+    all_line_tags = re.findall(r'\[.+\]\(file\:.*?\)(?:\s|$|\_\_|\;|\,)', tag_line)
     for tag in all_line_tags:
         # Remove tag brackets
         tag_name = re.findall(r'\[.*?\]', tag)[0]

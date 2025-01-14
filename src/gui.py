@@ -21,6 +21,8 @@ import src.directory_reading as directory_reading
 import src.util as util
 import src.docx_to_md as docx_to_md
 import src.cyrillyc_to_latin as cyrillic_to_latin
+import src.verify_data as verify_data
+import src.doc_2_docx_ms_word_win as doc_2_docx_ms_word_win
 
 dirName = os.path.dirname(__file__)
 
@@ -183,6 +185,7 @@ class MainWindow(QMainWindow):
             self.valid_doc_dir_label.setText("Invalid directory path.")
             self.valid_doc_dir_label.setStyleSheet("color: red;")
             self.set_run_button_enabled(False)
+        self.valid_doc_dir_label.adjustSize()
 
     def set_run_button_enabled(self, enabled):
         """
@@ -260,6 +263,10 @@ class MainWindow(QMainWindow):
             self.results_text_area.setText('\n'.join(results))
         else:
             self.results_text_area.setText(str(results))
+        if results != '':
+            self.results_text_area.verticalScrollBar().setValue(self.results_text_area.verticalScrollBar().maximum())
+        else:
+            self.results_text_area.verticalScrollBar().setValue(0)
 
     # @QtCore.pyqtSlot()
     def lock_gui(self, lock=True):
@@ -336,13 +343,14 @@ class Worker(QObject):
             self.progress_bar_value.emit(0, 'Clearing /tmp directory...')
             util.clear_tmp_dir(root_dir=self.root_dir)
             print('Cleared /tmp directory')
-        self.progress_bar_value.emit(0 if self.clean_tmp == False else 10, 'Copying documentation files and reading directory structure...')
+        self.progress_bar_value.emit(0 if self.clean_tmp == False else 5, 'Copying documentation files and reading directory structure...')
         # TODO: main script
         # Directory reading
         doc_structure, dir_tree, files_dir = directory_reading.copy_read_doc_dir(root_dir=self.root_dir, documentation_dir=self.doc_dir, clear_dir=self.clean_tmp, overwrite=True, load_struct=True)
+        # TODO: file conversion during directory reading (if possible)
         self.updated_results.emit({'Documentation directory structure': doc_structure})
         # Finding main documentation file
-        self.progress_bar_value.emit(30, 'Finding main documentation file...')
+        self.progress_bar_value.emit(10, 'Finding main documentation file...')
         files_in_doc_dir = [i for i in doc_structure['contents'] if i['type'] == 'file']
         self.updated_results.emit({'Files in root directory: ': '\n'.join([i['name'] for i in files_in_doc_dir])})
         print("Files in documentation root directory:")
@@ -352,29 +360,77 @@ class Worker(QObject):
         self.updated_results.emit({'Main document: ': main_doc['name']})
         print(f"Main documentation file: {main_doc['name']}")
         # Reading main documentation file
-        self.progress_bar_value.emit(40, 'Converting main documentation file to .md...')
+        self.progress_bar_value.emit(20, 'Converting main documentation file to .md...')
         md_file = docx_to_md.convert_docx_file(root_dir=self.root_dir, docx_path=main_doc['path'], file_name='main_doc', processed_dir=Path('tmp/converted_documents'), clear_dir=True, output_format='md')
         self.updated_results.emit({'Main documentation file converted to .md: ': md_file})
         # self.updated_results.emit(md_file)
         print(f'Main documentation file converted to .md: {md_file}')
         # Reading converted file and converting cyrillic characters to latin characters
-        self.progress_bar_value.emit(50, 'Reading converted file and converting cyrillic characters to latin characters...')
+        self.progress_bar_value.emit(30, 'Reading converted file and converting cyrillic characters to latin characters...')
         with open(md_file, 'r', encoding='utf-8') as f:
             md_file_txt = f.read()
             md_file_txt = cyrillic_to_latin.cyrillic_to_latin(md_file_txt)
         md_file_lat = md_file.replace('.md', '_lat.md')
         with open(md_file_lat, 'w', encoding='utf-8') as f:
             f.write(md_file_txt)
-        self.progress_bar_value.emit(60, 'Finding hyperlinks to files...')
+        self.progress_bar_value.emit(40, 'Finding hyperlinks to files...')
         found_hyperlinks = util.find_link_tags(root_dir=self.root_dir, md_file_txt=md_file_txt)
         print(f"Found hyperlinks: \n{json.dumps(found_hyperlinks, indent=4)}")
         self.updated_results.emit({'Found hyperlinks': found_hyperlinks})
         # Verify hyperlinks files exist
-        self.progress_bar_value.emit(70, 'Verifying hyperlinks files exist...')
+        self.progress_bar_value.emit(45, 'Verifying hyperlinks files exist...')
         unmatched_hyperlinks = util.verify_hyperlinks(root_dir=self.root_dir, found_hyperlinks=found_hyperlinks)
+        if len(unmatched_hyperlinks) > 0:
+            self.errors.append({'Unmatched hyperlinks': unmatched_hyperlinks})
         print(f"Unmatched hyperlinks: \n{json.dumps(unmatched_hyperlinks, indent=4)}")
         self.updated_results.emit({'Unmatched hyperlinks': unmatched_hyperlinks if len(unmatched_hyperlinks) > 0 else 'All hyperlinks verified'})
         # TODO: file verification (file content)
+        # File verification 1: "Knjiga nastavnika"
+        self.progress_bar_value.emit(50, 'Finding professors file...')
+        professors_file = verify_data.find_professors_file(root_dir=self.root_dir, links=found_hyperlinks)
+        professors_file_txt = ''
+        if professors_file != []:
+            print(f"Professors file: {professors_file}")
+            self.updated_results.emit({'Professors file': professors_file})
+            # Verify link to professors file
+            self.progress_bar_value.emit(55, 'Verifying professors file link...')
+            if os.path.exists(professors_file['path']):
+                self.updated_results.emit({'Professors file link verification': 'File exists'})
+                print(f'Professors file link verified - file found: {professors_file["path"]}')
+                # Read professors file
+                self.progress_bar_value.emit(60, 'Reading professors file...')
+                if professors_file['path'].endswith('.doc') and sys.platform.startswith('win'):
+                    file_name = professors_file['path'].split(os.sep)[-1]
+                    professors_file['path'] = doc_2_docx_ms_word_win.doc2docx(doc_path=professors_file['path'], docx_path=os.path.join(self.root_dir, Path('tmp/converted_documents'), file_name.replace('.doc', '.docx')))
+                    print(f'Converted professors file to .docx: {professors_file}')
+                if professors_file['path'].endswith('.docx'):
+                    self.progress_bar_value.emit(65, 'Converting professors file to .md and reading it...')
+                    professors_file = docx_to_md.convert_docx_file(root_dir=self.root_dir, docx_path=professors_file['path'], file_name='professors_file', output_format='md')
+                    print(f'Converted professors file to .md: {professors_file}')
+                    print('Converting cyrillic characters to latin characters...')
+                    with open(professors_file, 'r', encoding='utf-8') as f:
+                        professors_file_txt = f.read()
+                        professors_file_txt = cyrillic_to_latin.cyrillic_to_latin(professors_file_txt)
+                    print('Saving file with latin characters...')
+                    with open(professors_file.replace('.md', '_lat.md'), 'w', encoding='utf-8') as f:
+                        f.write(professors_file_txt)
+                else:
+                    print(f'Professors file is not .docx. Skipping conversion and reading.')
+                    self.errors.append({'Professors file': 'Not .docx'})
+                    self.updated_results.emit({'Professors file': 'Not .docx'})
+            else:
+                self.updated_results.emit({'Professors file link verification': 'File does not exist or link is broken'})
+                self.errors.append({'Professors file link verification': 'File does not exist or link is broken'})
+        else:
+            print('Professors file not found. Skipping professors verification.')
+            self.errors.append({'Professors file not found': 'Not found'})
+            self.updated_results.emit({'Professors file: ': 'Not found'})
+        if professors_file_txt != '':
+            self.progress_bar_value.emit(70, 'Verifying professors file content...')
+            print(f'Professors file loaded. Processing...')
+            # TODO: verify professors file content
+
+
 
 
 
