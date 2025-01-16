@@ -10,6 +10,13 @@ from docx.opc.constants import RELATIONSHIP_TYPE as RT
 
 def get_hyperlinks(docx_path):
     """
+    Retrieves hyperlinks from the given .docx file.
+
+    Args:
+        docx_path (str):         Absolute path to the .docx file
+
+    Returns:
+        (list):                  List of hyperlinks
     """
 
     docx_path = Path(r'{}'.format(docx_path))

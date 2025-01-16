@@ -18,7 +18,7 @@ import src.cyrillyc_to_latin as cyrillic_to_latin
 import src.util as util
 
 # TODO: some files are .doc, check options for conversion to .docx
-def convert_doc_to_txt_docx(root_dir, docx_path, file_name, processed_dir='/tmp/converted_documents/', clear_dir=False, data_types=['text', 'tables']):
+def convert_doc_to_txt_docx(root_dir, docx_path, file_name, processed_dir='tmp/converted_documents_docx', clear_dir=False, data_types=['text', 'tables']):
     '''
     Converts docx to text. By default converts all pages. If conv_all is set to False, it converts only the pages between first_page and last_page.
 
@@ -26,7 +26,7 @@ def convert_doc_to_txt_docx(root_dir, docx_path, file_name, processed_dir='/tmp/
         root_dir (str):          Root directory of the project, absolute path
         docx_path (str):         Relative path to the docx file from the root directory
         file_name (str):         Name of the converted text file (without extension)
-        processed_dir (str):     (Optional) Relative path to the directory where the converted txt files will be saved, from the root directory. Default is '/tmp/converted_documents/'
+        processed_dir (str):     (Optional) Relative path to the directory where the converted txt files will be saved, from the root directory. Default is 'tmp/converted_documents_docx'
         clear_dir (str):         (Optional) If True, clears the processed_dir directory before converting. Default is False
         data_types (list):       (Optional) List of data types to be extracted from the document. Types are passed as elements of a list. Options are ['text', 'tables']. Default is ['text', 'tables'], which means text and tables are extracted.
 
