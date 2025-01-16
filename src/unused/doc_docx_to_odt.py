@@ -11,7 +11,7 @@ import aspose.words as aw
 
 
 
-def convert_to_odt(root_dir, docx_path, file_name='', processed_dir='/tmp/converted_documents/', clear_dir=False, rename_temp_files=False):
+def convert_to_odt(root_dir, docx_path, file_name='', processed_dir='tmp/converted_documents_docx', clear_dir=False, rename_temp_files=False):
     """
     Uses the aspose-words library to convert .doc and .docx files to .odt files.
 
@@ -19,7 +19,7 @@ def convert_to_odt(root_dir, docx_path, file_name='', processed_dir='/tmp/conver
         root_dir (str):          Root directory of the project, absolute path
         docx_path (str):         Relative path to the docx file from the root directory
         file_name (str):         (Optional) Name of the converted text file (without extension). If not specified, input file name is used. Default is ''
-        processed_dir (str):     (Optional) Relative path to the directory where the converted txt files will be saved, from the root directory. Default is '/tmp/converted_documents/'
+        processed_dir (str):     (Optional) Relative path to the directory where the converted txt files will be saved, from the root directory. Default is 'tmp/converted_documents_docx'
         clear_dir (str):         (Optional) If True, clears the processed_dir directory before converting. Default is False
         rename_temp_files (str): (Optional) If True, renames the files during conversion. Default is False
 

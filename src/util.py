@@ -35,8 +35,11 @@ def clear_tmp_dir(root_dir):
     """
 
     tmp_dir = os.path.join(root_dir, Path('tmp'))
-    if os.path.exists(tmp_dir):
-        shutil.rmtree(tmp_dir)
+    try:
+        if os.path.exists(tmp_dir):
+            shutil.rmtree(tmp_dir)
+    except Exception as e:
+        print(f'Error clearing /tmp directory:\n    {e}')
 
 def process_name(name, file=False, skip_ext=True):
     """

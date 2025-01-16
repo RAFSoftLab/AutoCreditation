@@ -25,6 +25,10 @@ def doc2docx(doc_path, docx_path):
             os.system('pip install pywin32')
         from win32com import client as wc
 
+    converted_dir_name = os.sep.join(docx_path.split(os.sep)[:-1])
+    if not os.path.exists(converted_dir_name):
+        os.makedirs(converted_dir_name, exist_ok=True)
+
     # word = wc.DispatchEx("Word.Application")
     word = wc.Dispatch('word.Application')
     doc = word.Documents.Open(doc_path)

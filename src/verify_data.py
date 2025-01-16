@@ -37,6 +37,7 @@ def find_professors_file(root_dir, links, search_regex=''):
 
 def vefify_professors():
     """
+    Verifies contents of the professors file.
     """
     # TODO
     return
