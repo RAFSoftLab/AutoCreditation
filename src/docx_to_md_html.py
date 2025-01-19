@@ -6,7 +6,7 @@ import mammoth
 
 
 
-def convert_docx_file(root_dir, docx_path, file_name='', processed_dir='tmp/converted_documents_md/', clear_dir=False, output_format='html'):
+def convert_docx_file(root_dir, docx_path, file_name='', processed_dir='tmp/converted_documents_md_html/', clear_dir=False, output_format='html'):
     """
     Converts .docx file to .html or .md or .txt file.
 
@@ -14,7 +14,7 @@ def convert_docx_file(root_dir, docx_path, file_name='', processed_dir='tmp/conv
         root_dir (str):          Root directory of the project, absolute path
         docx_path (str):         Absolute or relative (from the root directory) path to the .docx file
         file_name (str):         Name of the converted text file (without extension). If not specified, input file name is used. Default is ''
-        processed_dir (str):     (Optional) Relative path to the directory where the converted txt files will be saved, from the root directory. Default is 'tmp/converted_documents_md/'
+        processed_dir (str):     (Optional) Relative path to the directory where the converted txt files will be saved, from the root directory. Default is 'tmp/converted_documents_md_html/'
         clear_dir (str):         (Optional) If True, clears the processed_dir directory before converting. Default is False
         output_format (str):     (Optional) Output format of the converted file. Options are 'html', 'md', 'txt'. Default is 'html'
 
@@ -85,8 +85,8 @@ def convert_docx_file(root_dir, docx_path, file_name='', processed_dir='tmp/conv
 
     return file_name
 
-
-def convert_markitdown(root_dir, docx_path, file_name='', processed_dir='/tmp/converted_documents_md', clear_dir=False):
+# Not used
+def convert_markitdown(root_dir, docx_path, file_name='', processed_dir='/tmp/converted_documents_md_html', clear_dir=False):
     """
     Converts .docx file to .md file using markitdown library.
 
@@ -94,7 +94,7 @@ def convert_markitdown(root_dir, docx_path, file_name='', processed_dir='/tmp/co
         root_dir (str):          Root directory of the project, absolute path
         docx_path (str):         Relative path to the docx file from the root directory
         file_name (str):         (Optional) Name of the converted text file (without extension). If not specified, input file name is used. Default is ''
-        processed_dir (str):     (Optional) Relative path to the directory where the converted txt files will be saved, from the root directory. Default is '/tmp/converted_documents_md/'
+        processed_dir (str):     (Optional) Relative path to the directory where the converted txt files will be saved, from the root directory. Default is '/tmp/converted_documents_md_html/'
         clear_dir (str):         (Optional) If True, clears the processed_dir directory before converting. Default is False
 
     Returns:
