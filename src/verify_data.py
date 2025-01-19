@@ -23,7 +23,7 @@ def find_professors_file(root_dir, links, search_regex=''):
     search_regex = r'Knjiga\snastavnika' if search_regex == '' else search_regex
 
     for link in links:
-        if re.search(r'Knjiga\snastavnika', link['line']):
+        if re.search(r'Knjiga\snastavnika', f'{link['name']} {link["desc"]} {link["line"]}'):
             professors_file.append(link)
 
     if len(professors_file) > 1:

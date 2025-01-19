@@ -37,7 +37,7 @@ Automated reading and checkup of university acreditation documentation files.
   To manually install the required dependencies, install the following packages. To create a conda environment, use the following command:
 
   ```bash
-  conda create -n <env_name>
+  conda create -n <env_name> python=3.12
   ```
 
   | _DEPENDENCY_ | _PIP_ | _CONDA_ |
@@ -119,3 +119,13 @@ Automated reading and checkup of university acreditation documentation files.
     - Verifying professors file link
     - Reading professors file
     - Updated README.md
+  - 0.0.6 - Linux support
+    - Added support for Linux
+      - Converting .doc files to .docx using LibreOffice
+    - .docx to .html conversion
+      - Files are converted to .html instead of .md
+      - File reading support for .html files
+      - Extracting hyperlinks from .html files
+      - Absolute and relative paths in hyperlinks supported
+    - Renaming files while reading directory structure
+      - Replacing cyrillic characters with latin characters in files/directories names

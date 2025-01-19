@@ -19,7 +19,7 @@ from pyqtspinner.spinner import WaitingSpinner
 
 import src.directory_reading as directory_reading
 import src.util as util
-import src.docx_to_md as docx_to_md
+import src.docx_to_md_html as docx_to_md_html
 import src.cyrillyc_to_latin as cyrillic_to_latin
 import src.verify_data as verify_data
 import src.doc_2_docx_ms_word_win as doc_2_docx_ms_word_win
@@ -38,6 +38,7 @@ class MainWindow(QMainWindow):
         doc_dir = ''
         root_dir = root_dir
         print(root_dir)
+        util.install_office_package()
         self.initUI(root_dir=root_dir, doc_dir=doc_dir)
 
     def initUI(self, root_dir='', doc_dir=''):
@@ -53,9 +54,10 @@ class MainWindow(QMainWindow):
         self.root_dir = root_dir
         self.doc_dir = doc_dir
         # TODO: remove after testing:
-        self.doc_dir = r'C:\Users\steva\Downloads\Softversko inzenjerstvo (OAS) - original-20241120T100738Z-001\Softversko inzenjerstvo (OAS) - original'
+        self.doc_dir = r'/home/zecic/Преузимања/Softversko inzenjerstvo (OAS) - original-20241120T100738Z-001/Softversko inzenjerstvo (OAS) - original'
         self.valid_doc_dir = False
         self.clean_tmp = True
+        self.copy_files = True
         self.output_text = ''
         self.erorrs = []
         self.doc_map = {}
@@ -321,7 +323,7 @@ class MainWindow(QMainWindow):
         # lock gui elements of main window (disable buttons, ligit conne edits, etc.)
         self.thread = QThread()
         self.worker = Worker()
-        self.worker.setInput(root_dir=self.root_dir, doc_dir=self.doc_dir, clean_tmp=self.clean_tmp)
+        self.worker.setInput(root_dir=self.root_dir, doc_dir=self.doc_dir, clean_tmp=self.clean_tmp, copy_files=self.copy_files)
         self.worker.moveToThread(self.thread)
         self.thread.started.connect(self.worker.run)
         self.worker.progress_bar_visibility.connect(self.setProgressBarVisible)
@@ -352,10 +354,12 @@ class Worker(QObject):
     updated_results = pyqtSignal(dict)
     update_errors = pyqtSignal(list)
     update_doc_map = pyqtSignal(dict)
-    def setInput(self, root_dir, doc_dir, clean_tmp):
+    def setInput(self, root_dir, doc_dir, clean_tmp, copy_files):
         self.root_dir = root_dir
         self.doc_dir = doc_dir
         self.clean_tmp = clean_tmp
+        self.copy_files = copy_files
+        self.files_dir = ''
         self.doc_map = {}
         self.resultData = {}
         self.errors = []
@@ -371,8 +375,8 @@ class Worker(QObject):
 
         self.progress_bar_value.emit(0 if self.clean_tmp == False else 5, 'Copying documentation files and reading directory structure...')
         # Directory reading
-        doc_structure, dir_tree, files_dir = directory_reading.copy_read_doc_dir(root_dir=self.root_dir, documentation_dir=self.doc_dir, clear_dir=self.clean_tmp, overwrite=True, load_struct=True)
-        # TODO: file conversion during directory reading (if possible)
+        # TODO: optional copying ???
+        doc_structure, dir_tree, self.files_dir = directory_reading.copy_read_doc_dir(root_dir=self.root_dir, documentation_dir=self.doc_dir, clear_dir=self.clean_tmp, overwrite=True, load_struct=True, convert_names_to_latin=True)
         self.updated_results.emit({'Documentation directory structure': doc_structure})
         # Finding main documentation file
 
@@ -387,31 +391,32 @@ class Worker(QObject):
         print(f"Main documentation file: {main_doc['name']}")
 
         # Reading main documentation file
-        self.progress_bar_value.emit(20, 'Converting main documentation file to .md...')
+        self.progress_bar_value.emit(20, 'Converting main documentation file to .html...')
         # If the main documentation file is .doc, it is converted to .docx
         if main_doc['path'].split(os.sep)[-1].endswith('.doc'):
             main_doc_docx = doc_2_docx_ms_word_win.doc2docx(doc_path=main_doc['path'], docx_path=os.path.join(self.root_dir, Path('tmp/converted_documents_docx'), main_doc['name'].replace('.doc', '.docx')))
             self.updated_results.emit({'Main documentation file converted to .docx: ': main_doc_docx})
             print(f'Main documentation file converted to .docx: {main_doc_docx}')
             self.doc_map[main_doc['path']] = main_doc_docx
+            self.update_doc_map.emit(self.doc_map)
         doc_to_convert_path = self.doc_map[main_doc['path']] if main_doc['path'] in self.doc_map.keys() else main_doc['path']
-        md_file = docx_to_md.convert_docx_file(root_dir=self.root_dir, docx_path=doc_to_convert_path, file_name='main_doc', processed_dir=Path('tmp/converted_documents_md'), clear_dir=True, output_format='md')
-        self.updated_results.emit({'Main documentation file converted to .md: ': md_file})
+        md_file = docx_to_md_html.convert_docx_file(root_dir=self.root_dir, docx_path=doc_to_convert_path, file_name='main_doc', processed_dir=Path('tmp/converted_documents_md_html'), clear_dir=True, output_format='html')
+        self.updated_results.emit({'Main documentation file converted to .html: ': md_file})
         # self.updated_results.emit(md_file)
-        print(f'Main documentation file converted to .md: {md_file}')
+        print(f'Main documentation file converted to .html: {md_file}')
 
         # Reading converted file and converting cyrillic characters to latin characters
         self.progress_bar_value.emit(30, 'Reading converted file and converting cyrillic characters to latin characters...')
         with open(md_file, 'r', encoding='utf-8') as f:
             md_file_txt = f.read()
             md_file_txt = cyrillic_to_latin.cyrillic_to_latin(md_file_txt)
-        md_file_lat = md_file.replace('.md', '_lat.md')
+        md_file_lat = md_file.replace('.html', '_lat.html')
         with open(md_file_lat, 'w', encoding='utf-8') as f:
             f.write(md_file_txt)
 
         # Finding hyperlinks to files
         self.progress_bar_value.emit(40, 'Finding hyperlinks to files...')
-        found_hyperlinks = util.find_link_tags(root_dir=self.root_dir, md_file_txt=md_file_txt)
+        found_hyperlinks = util.find_link_tags(root_dir=self.root_dir, doc_dir=self.files_dir, md_file_txt=md_file_txt, file_format='html')
         print(f"Found hyperlinks: \n{json.dumps(found_hyperlinks, indent=4)}")
         self.updated_results.emit({'Found hyperlinks': found_hyperlinks})
 
@@ -447,7 +452,7 @@ class Worker(QObject):
                 professors_file_path = professors_file['path']
                 # TODO: remove platform check
                 # TODO: move to separate function
-                if professors_file['path'].endswith('.doc') and sys.platform.startswith('win'):
+                if professors_file['path'].endswith('.doc') and sys.platform.startswith('win') or sys.platform.startswith('linux'):
                     file_name = professors_file['path'].split(os.sep)[-1]
                     professors_file_docx = doc_2_docx_ms_word_win.doc2docx(doc_path=professors_file['path'], docx_path=os.path.join(self.root_dir, Path('tmp/converted_documents_docx'), file_name.replace('.doc', '.docx')))
                     print(f'Converted professors file to .docx: {professors_file}')
@@ -456,15 +461,15 @@ class Worker(QObject):
                     self.update_doc_map.emit(self.doc_map)
                     professors_file_path = self.doc_map[professors_file['path']]
                 if professors_file_path.endswith('.docx'):
-                    self.progress_bar_value.emit(65, 'Converting professors file to .md and reading it...')
-                    professors_file = docx_to_md.convert_docx_file(root_dir=self.root_dir, docx_path=professors_file_path, file_name='professors_file', processed_dir='tmp/converted_documents_md', output_format='md')
-                    print(f'Converted professors file to .md: {professors_file}')
+                    self.progress_bar_value.emit(65, 'Converting professors file to .html and reading it...')
+                    professors_file = docx_to_md_html.convert_docx_file(root_dir=self.root_dir, docx_path=professors_file_path, file_name='professors_file', processed_dir='tmp/converted_documents_md_html', output_format='html')
+                    print(f'Converted professors file to .html: {professors_file}')
                     print('Converting cyrillic characters to latin characters...')
                     with open(professors_file, 'r', encoding='utf-8') as f:
                         professors_file_txt = f.read()
                         professors_file_txt = cyrillic_to_latin.cyrillic_to_latin(professors_file_txt)
                     print('Saving file with latin characters...')
-                    with open(professors_file.replace('.md', '_lat.md'), 'w', encoding='utf-8') as f:
+                    with open(professors_file.replace('.html', '_lat.html'), 'w', encoding='utf-8') as f:
                         f.write(professors_file_txt)
                 else:
                     print(f'Professors file is not .docx. Skipping conversion and reading.')
@@ -488,6 +493,7 @@ class Worker(QObject):
 
 
         print("Script finished.")
+        # TODO: Delete copied files after finish.
         self.progress_bar_visibility.emit(False)
         self.finished.emit(self.resultData)
 

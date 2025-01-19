@@ -17,11 +17,25 @@ from pathlib import Path
 from itertools import islice
 import re
 import shutil
+import sys
 
 import src.util as util
 import src.cyrillyc_to_latin as cyrillic_to_latin
 import src.results_save_read as results_save_read
 
+
+def install_office_package():
+    """
+    Installs package for Microsoft Office if running on Windows.
+
+    Args:
+        None
+
+    Returns:
+        None
+    """
+    if sys.platform.startswith('win'):
+        os.system('pip install pywin32')
 
 def clear_tmp_dir(root_dir):
     """
@@ -156,9 +170,17 @@ def print_save_tree(root_dir, formed_tree='', dir_path='', save_dir='', print_tr
         return formed_tree
 
     # If formed_tree is passed, and it is not a path to a .txt file, it is assumed to be a tree structure as a string
-    if not re.search(r'^{}'.format(re.escape(root_dir)), formed_tree):
+    if not re.search(r'^{}'.format(re.escape(root_dir)), str(formed_tree)):
         if print_tree == True:
             print(formed_tree)
+            if save_dir != '':
+                try:
+                    if not os.path.exists(save_dir):
+                        os.makedirs(save_dir, exist_ok=True)
+                    with open(os.path.join(save_dir, Path('documentation_tree.txt')), 'w') as f:
+                        f.write(formed_tree)
+                except Exception as e:
+                    print(f'Error saving tree structure to {os.path.join(save_dir, Path("documentation_tree.txt"))}:\n    {e}')
         return formed_tree
 
     # If formed_tree is passed, and it is a path to a .txt file, it is opened and printed
@@ -168,7 +190,7 @@ def print_save_tree(root_dir, formed_tree='', dir_path='', save_dir='', print_tr
             print(saved_tree)
         return saved_tree
 
-def dir_struct(doc_dir, process_names=False):
+def dir_struct(doc_dir, process_names=False, convert_to_latin=False):
     """
     Recursively reads a structure of the given documentation directory.
 
@@ -176,6 +198,7 @@ def dir_struct(doc_dir, process_names=False):
         doc_dir (str):           Absolute path to the directory to be read
         process_names (bool):    If True, special characters are removed from the file/directory names. Default is False
         save_struct (bool):      If True, the structure is saved in a file. Default is True
+        convert_to_latin (bool): If True, cyrillic characters of the files/directories are converted to latin characters. Files/directories are renamed accordingly. Default is False
 
     Returns:
         dir_struct (dict):       Dictionary representing directory: {'name': <name of the file/directory>, 'processed_name': <name with special characters removed>, 'type': <"file" or "directory">, 'path': <path to file/directory>, 'contents': <for directories only (else empty): list of all files in the directory>}
@@ -184,24 +207,26 @@ def dir_struct(doc_dir, process_names=False):
     name = doc_dir.split(os.sep)[-1]
     type = 'directory' if os.path.isdir(doc_dir) else 'file'
     processed_name = util.process_name(name=name, file=True if type == 'file' else False) if process_names == True else name
+    orig_name = name
+    name = cyrillic_to_latin.cyrillic_to_latin(name) if convert_to_latin == True else name
     path = doc_dir
     contents = []
 
     if type == 'file':
-        return [{'name': name, 'processed_name': processed_name, 'type': type, 'contents': contents}]
+        return [{'name': name, 'orig_name': orig_name, 'processed_name': processed_name, 'type': type, 'contents': contents}]
     for dir_item in os.listdir(doc_dir):
         if dir_item == '.DS_Store':
             continue
         if os.path.isfile(os.path.join(doc_dir, dir_item)):
-            contents.append({'name': dir_item,
+            contents.append({'name': dir_item if convert_to_latin == False else cyrillic_to_latin.cyrillic_to_latin(dir_item),
+                                    'orig_name': dir_item,
                                     'processed_name': util.process_name(name=dir_item, file=True) if process_names == True else dir_item,
                                     'type': 'file',
-                                    'path': os.path.join(doc_dir, dir_item),
+                                    'path': os.path.join(doc_dir, dir_item if convert_to_latin == False else cyrillic_to_latin.cyrillic_to_latin(dir_item)),
                                     'contents': []})
             continue
         contents.append(dir_struct(os.path.join(doc_dir, dir_item), process_names=process_names))
-    return {'name': name, 'processed_name': processed_name, 'type': type, 'path': doc_dir, 'contents': contents}
-# TODO: rename files while reading structure, if process_names is True
+    return {'name': name, 'orig_name': orig_name, 'processed_name': processed_name, 'type': type, 'path': doc_dir, 'contents': contents}
 
 
 def find_main_doc(docs):
@@ -226,13 +251,15 @@ def find_main_doc(docs):
             break
     return main_doc
 
-def find_link_tags(root_dir, md_file_txt):
+def find_link_tags(root_dir, doc_dir, md_file_txt, file_format='md'):
     """
     Finds all link tags in the given .md file.
 
     Args:
         root_dir (str):        Root directory of the project, absolute path
-        md_file_txt (str):     .md file content
+        doc_dir (str):         Absolute path to the documentation directory
+        md_file_txt (str):     .md or .html file content
+        file_format (str):     (Optional) File format of the file, either 'md' or 'html'. Default is 'md'
 
     Returns:
         (list):                List of link
@@ -242,9 +269,12 @@ def find_link_tags(root_dir, md_file_txt):
     link_tag_lines = []
     link_tags = []
 
-    for line in md_file_txt.split('\n'):
-        if re.search(r'\(file\:', line):
-            link_tag_lines.append(line)
+    if file_format == 'md':
+        for line in md_file_txt.split('\n'):
+            if re.search(r'\(file\:', line) or re.search(r'\(\.\.\{}'.format(os.sep), line):
+                link_tag_lines.append(line)
+    else:
+        link_tag_lines = re.findall(r'\<p\>.*?\<a href\=.*?\<\/a\>.*?\<\/p\>', md_file_txt)
 
     # Save link tag lines to a file
     if not os.path.exists(os.path.join(root_dir, Path('tmp'))):
@@ -255,7 +285,9 @@ def find_link_tags(root_dir, md_file_txt):
     found_tags = []
 
     for indexLine, line in enumerate(link_tag_lines):
-        all_line_tags = extract_path_from_tag(line)
+        all_line_tags = extract_path_from_tag(line, doc_dir=doc_dir)
+        if all_line_tags == ['not_file_link']:
+            continue
         for tag in all_line_tags:
             found_tags.append(tag)
 
@@ -265,12 +297,14 @@ def find_link_tags(root_dir, md_file_txt):
 
     return found_tags
 
-def extract_path_from_tag(tag_line):
+def extract_path_from_tag(tag_line, doc_dir='', file_format='html'):
     """
     Extracts the path from the given tag.
 
     Args:
         tag_line (str):         Tag line to be processed
+        doc_dir (str):          (Optional) Absolute path to the documentation directory. Default is ''
+        file_format (str):      (Optional) File format of the file, either 'md' or 'html'. Default is 'html'
 
     Returns:
         (str):                  Path extracted from the tag
@@ -278,52 +312,119 @@ def extract_path_from_tag(tag_line):
 
     line_tags = []
 
-    all_line_tags = re.findall(r'\[.+\]\(file\:.*?\)(?:\s|$|\_\_|\;|\,)', tag_line)
-    for tag in all_line_tags:
-        # Remove tag brackets
-        tag_name = re.findall(r'\[.*?\]', tag)[0]
-        tag_name = tag_name[1:] if tag_name[0] == '[' else tag_name
-        tag_name = tag_name[:-1] if tag_name[-1] == ']' else tag_name
-        while tag_name[0] == '_':
-            tag_name = tag_name[1:]
-        while tag_name[-1] == '_':
-            tag_name = tag_name[:-1]
-        tag_name = tag_name.replace('\\', '')
-        if re.search(r'\(file\:.+\.?(pdf|doc|docx)\)', tag):
-            tag_path = re.findall(r'\(file\:.+\.(?:pdf|doc|docx)\)', tag)[0]
-        else:
-            tag_path = re.findall(r'\(file\:.+\)', tag)[0]
-        tag_path = tag_path[6:] if tag_path[0:6] == '(file:' else tag_path
-        tag_path = tag_path[:-1] if tag_path[-1] == ')' else tag_path
-        while tag_path[0] == '/':
-            tag_path = tag_path[1:]
-        # Convert to readable path
+    # TODO: HTML tags
+    tag_abs_path = r'file\:\/\/\/'
+    tag_rel_path = r'\.\.\/'
+    abs_path = True if re.search(tag_abs_path, tag_line) else False
+
+    if file_format == 'html':
+        tag_desc = ''
+        # Skipping links to file sections and to webpages
+        if re.search(r'\<a href\=\"\#', tag_line) or\
+            re.search(r'\<a href\=\"http', tag_line):
+            return ['not_file_link']
+        # Extract links to files
+        line_tag = re.findall(r'\<a href\=\"{}.*?\"\>'.format(tag_abs_path if abs_path == True else tag_rel_path), tag_line)
+        line_tag = line_tag[0] if line_tag != [] else ''
+        tag_name = tag_line.replace(line_tag, '')
+        tag_name = tag_name.replace('<p>', '')
+        tag_name_split = tag_name.split('</a>')
+        tag_name = tag_name_split[0] if len(tag_name_split) > 0 else re.sub(r'\<\/a\>.*', '', tag_name)
+        tag_desc = tag_line.replace(line_tag, '').replace(tag_name, '').replace('</a>', '').replace('<p>', '').replace('</p>', '').strip()
+        tag_desc = tag_line if tag_desc == '' else tag_desc
+        if tag_name[0] == '<' and re.search(r'^\<.*?\>', tag_name):
+            tag_tag = re.findall(r'^\<.*?\>', tag_name)
+            tag_tag = tag_tag[0] if tag_tag != [] else ''
+            tag_close_tag = re.sub(r'^\<', '</', tag_tag)
+            tag_name = tag_name.replace(tag_tag, '').replace(tag_close_tag, '').strip()
+        tag_path = ''
+        if line_tag != '':
+            tag_path = line_tag.replace('<a href=', '').replace('>', '')
+            tag_path = tag_path[1:] if tag_path[0] in ["'", '"'] else tag_path
+            tag_path = tag_path[:-1] if tag_path[-1] in ["'", '"'] else tag_path
+        # Verify path exists
         try:
             from urllib import unquote
         except ImportError:
             from urllib.parse import unquote
+        if abs_path == True:
+            tag_path = unquote(tag_path)
+            if os.path.exists(tag_path):
+                print(f'Found link to file: {tag_path}')
+            else:
+                print(f'Link to file not found: {tag_path}')
+            return [{'name': tag_name, 'path': tag_path, 'desc': tag_desc, 'line': tag_line}]
+        tag_path = re.sub(r'^{}'.format(tag_rel_path), '', tag_path)
+        tag_path = tag_path[1:] if tag_path[0] == os.sep else tag_path
+        tag_path = os.path.join(doc_dir, Path(tag_path) if str(doc_dir).split(os.sep)[-1] != str(tag_path).split(os.sep)[0] else Path(os.sep.join(tag_path.split(os.sep)[1:])))
+        # Convert to readable path
         tag_path = unquote(tag_path)
-        # tag_path = tag_path.replace('nј', 'nj')
-        # Exclude any text after the longest path in string
-        tag_alt_path = ''
-        if not os.path.exists(tag_path):
-            path_found = False
-            path_parent = os.sep.join(tag_path.split(os.sep)[:-1])
-            if os.path.exists(path_parent) and os.path.isdir(path_parent):
-                parent_dir_contents = os.listdir(path_parent)
-                file_name = tag_path.split(os.sep)[-1]
-                for item in parent_dir_contents:
-                    if file_name == cyrillic_to_latin.cyrillic_to_latin(item):
-                        path_found = True
-                        break
-            if path_found == False:
-                tag_path_new = tag_path
-                while len(tag_path_new) > 0:
-                    if os.path.exists(tag_path_new):
-                        tag_alt_path = tag_path_new
-                        break
-                    tag_path_new = tag_path_new[:-1]
-        line_tags.append({'name': tag_name, 'path': tag_path, 'line': tag_line, 'verified_path': tag_alt_path if tag_alt_path != '' else tag_path})
+        if os.path.exists(tag_path):
+            print(f'Found link to file: {tag_path}')
+        else:
+            print(f'Link to file not found: {tag_path}')
+        return [{'name': tag_name, 'desc': tag_desc, 'path': tag_path, 'line': tag_line}]
+    # TODO: apply same principal as for HTML files
+    if file_format == 'md':
+        tag_desc = ''
+        all_line_tags = re.findall(r'\[.+\]\(file\:.*?\)(?:\s|$|\_\_|\;|\,)', tag_line)
+        all_line_tags_alt = re.findall(r'\[.+\]\(\.\.\{}.*?\)(?:\s|$|\_\_|\;|\,)'.format(os.sep), tag_line)
+        alt_line_tags = False
+        file_tag = 'file\:'
+        if all_line_tags == []:
+            all_line_tags = all_line_tags_alt
+            alt_line_tags = True
+            file_tag = '\.\.\{}'.format(os.sep)
+        for tag in all_line_tags:
+            # Remove tag brackets
+            tag_name = re.findall(r'\[.*?\]', tag)[0]
+            tag_name = tag_name[1:] if tag_name[0] == '[' else tag_name
+            tag_name = tag_name[:-1] if tag_name[-1] == ']' else tag_name
+            while tag_name[0] == '_':
+                tag_name = tag_name[1:]
+            while tag_name[-1] == '_':
+                tag_name = tag_name[:-1]
+            tag_name = tag_name.replace('\\', '')
+            if re.search(r'\({}.+\.?(pdf|doc|docx)\)'.format(file_tag), tag):
+                tag_path = re.findall(r'\({}.+\.(?:pdf|doc|docx)\)'.format(file_tag), tag)[0]
+            else:
+                tag_path = re.findall(r'\({}.+\)'.format(file_tag), tag)[0]
+            tag_path = tag_path[6:] if tag_path[0:6] == '(file:' else tag_path[3:] if tag_path[0:3] == '(..' else tag_path
+            tag_path = tag_path[:-1] if tag_path[-1] == ')' else tag_path
+
+            while tag_path[0] == '/':
+                tag_path = tag_path[1:]
+            # Convert to readable path
+            try:
+                from urllib import unquote
+            except ImportError:
+                from urllib.parse import unquote
+            tag_path = unquote(tag_path)
+            # tag_path = tag_path.replace('nј', 'nj')
+            # Exclude any text after the longest path in string
+            # Convert to absolute path if relative is given
+            if abs_path == False:
+                tag_path = os.path.join(doc_dir, Path(tag_path))
+            tag_alt_path = ''
+            if not os.path.exists(tag_path):
+                path_found = False
+                path_parent = os.sep.join(tag_path.split(os.sep)[:-1])
+                if os.path.exists(path_parent) and os.path.isdir(path_parent):
+                    parent_dir_contents = os.listdir(path_parent)
+                    file_name = tag_path.split(os.sep)[-1]
+                    for item in parent_dir_contents:
+                        if file_name == cyrillic_to_latin.cyrillic_to_latin(item):
+                            path_found = True
+                            break
+                if path_found == False:
+                    tag_path_new = tag_path
+                    while len(tag_path_new) > 0:
+                        if os.path.exists(tag_path_new):
+                            tag_alt_path = tag_path_new
+                            break
+                        tag_path_new = tag_path_new[:-1]
+            tag_desc = tag_line if tag_desc == '' else tag_desc
+            line_tags.append({'name': tag_name, 'path': tag_path, 'desc': tag_desc, 'line': tag_line, 'verified_path': tag_alt_path if tag_alt_path != '' else tag_path})
     return line_tags
 
 def verify_hyperlinks(root_dir, found_hyperlinks):
