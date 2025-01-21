@@ -228,6 +228,44 @@ def dir_struct(doc_dir, process_names=False, convert_to_latin=False):
         contents.append(dir_struct(os.path.join(doc_dir, dir_item), process_names=process_names))
     return {'name': name, 'orig_name': orig_name, 'processed_name': processed_name, 'type': type, 'path': doc_dir, 'contents': contents}
 
+def save_data(root_dir, data, save_dir='tmp', data_name='data'):
+    """
+    Saves the given data to a .json file.
+
+    Args:
+        root_dir (str):          Root directory of the project, absolute path
+        data (dict):             Data to be saved
+        save_dir (str):          Relative path to the directory where the data is saved. (Default 'tmp')
+        data_name (str):         Name of the data to be saved. (Default 'data')
+
+    Returns:
+        (str):                   Path to the saved data
+    """
+    save_dir = save_dir[1] if save_dir[0] == os.sep else save_dir
+    save_path = os.path.join(root_dir, Path(save_dir), f'{data_name}.json')
+    with open(save_path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=4)
+    return save_path
+
+def load_data(root_dir, abs_path='', save_dir='tmp', data_name='data'):
+    """
+    Loads the data from a .json file. If abs_path is not passed, path is created from root_dir, save_dir and data_name.
+
+    Args:
+        root_dir (str):          Root directory of the project, absolute path
+        abs_path (str):          Absolute path to the data file. If not passed, path is created from root_dir, save_dir and data_name. (Default '')
+        save_dir (str):          Relative path to the directory where the data is saved. (Default 'tmp')
+        data_name (str):         Name of the data to be saved. (Default 'data')
+
+    Returns:
+        (dict):                   Data
+    """
+
+    save_dir = save_dir[1] if save_dir[0] == os.sep else save_dir
+    save_path = os.path.join(root_dir, Path(save_dir), f'{data_name}.json') if abs_path == '' else abs_path
+    with open(save_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    return data
 
 def find_main_doc(docs):
     """
@@ -342,6 +380,7 @@ def extract_path_from_tag(tag_line, doc_dir='', file_format='html'):
             tag_path = line_tag.replace('<a href=', '').replace('>', '')
             tag_path = tag_path[1:] if tag_path[0] in ["'", '"'] else tag_path
             tag_path = tag_path[:-1] if tag_path[-1] in ["'", '"'] else tag_path
+            tag_path = re.sub(tag_abs_path if abs_path == True else tag_rel_path, '', tag_path)
         # Verify path exists
         try:
             from urllib import unquote

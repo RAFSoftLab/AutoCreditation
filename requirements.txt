@@ -2,6 +2,7 @@ python-docx
 mammoth
 PyQt5
 pyqtspinner
+pandas
 # aspose-words
 # markitdown
 # textract
