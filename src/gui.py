@@ -54,7 +54,7 @@ class MainWindow(QMainWindow):
         self.root_dir = root_dir
         self.doc_dir = doc_dir
         # TODO: remove after testing:
-        self.doc_dir = r'/home/zecic/Преузимања/Softversko inzenjerstvo (OAS) - original-20241120T100738Z-001/Softversko inzenjerstvo (OAS) - original'
+        self.doc_dir = r'C:/Users/steva/Downloads/Softversko inzenjerstvo (OAS) - original-20241120T100738Z-001/Softversko inzenjerstvo (OAS) - original'
         self.valid_doc_dir = False
         self.clean_tmp = True
         self.copy_files = True
@@ -246,7 +246,7 @@ class MainWindow(QMainWindow):
                     self.output_text += '\n- - - {}: \n{}\n- - -\n'.format(key, results[key])
                     continue
                 if type(results[key]) == dict:
-                    self.output_text += '\n- - - {}: \n{}\n- - -\n'.format(key, json.dumps(results[key], indent=4))
+                    self.output_text += '\n- - - {}: \n{}\n- - -\n'.format(key, json.dumps(results[key], indent=4, ensure_ascii=False))
                     continue
                 if type(results[key]) == list:
                     items_list = []
@@ -254,7 +254,7 @@ class MainWindow(QMainWindow):
                         if type(item) == str:
                             items_list.append(item)
                         elif type(item) == dict:
-                            items_list.append(json.dumps(item, indent=4))
+                            items_list.append(json.dumps(item, indent=4, ensure_ascii=False))
                         elif type(item) == list:
                             items_list.append('\n'.join(item))
                         else:
@@ -432,7 +432,7 @@ class Worker(QObject):
         # File verification 1: "Knjiga nastavnika"
         self.progress_bar_value.emit(50, 'Finding professors file...')
         professors_file = verify_data.find_professors_file(root_dir=self.root_dir, links=found_hyperlinks)
-        professors_file_txt = ''
+        professors_file_txt, professors_data, professors_save_path = '', '', ''
         if professors_file != []:
             print(f"Professors file: {professors_file}")
             self.updated_results.emit({'Professors file': professors_file})
@@ -483,9 +483,59 @@ class Worker(QObject):
             self.errors.append({'Professors file not found': 'Not found'})
             self.updated_results.emit({'Professors file: ': 'Not found'})
         if professors_file_txt != '':
-            self.progress_bar_value.emit(70, 'Verifying professors file content...')
-            print(f'Professors file loaded. Processing...')
-            # TODO: verify professors file content
+            self.progress_bar_value.emit(70, 'Listing professors file content...')
+            print(f'Professors file loaded. Reading...')
+            professors_data, professors_save_path = verify_data.read_professors(root_dir=self.root_dir, professors_file_txt=professors_file_txt)
+            self.updated_results.emit({'Professors file read': professors_data})
+            self.updated_results.emit({'Professors file saved to file': professors_save_path})
+
+        # Find and read subjects file
+        self.progress_bar_value.emit(75, 'Finding subjects file...')
+        subjects_file = verify_data.find_subjects_file(root_dir=self.root_dir, links=found_hyperlinks)
+        subjects_file_txt, subjects_data, subjects_save_path = '', '', ''
+        print(f"Subjects file: {subjects_file}")
+        subjects_file_verified = False
+        if subjects_file != []:
+            self.updated_results.emit({'Subjects file': subjects_file})
+            # Verify path to subjects file
+            self.progress_bar_value.emit(77, 'Verifying subjects file path...')
+            if os.path.exists(subjects_file['path']):
+                subjects_file_verified = True
+                print(f'Subjects file path verified - file found: {subjects_file["path"]}')
+                self.updated_results.emit({'Subjects file link verification': 'File exists'})
+        else:
+            self.updated_results.emit({'Subjects file': 'Not found'})
+            self.errors.append({'Subjects file not found': 'Not found'})
+        if subjects_file_verified == True:
+            subjects_file_path = subjects_file['path']
+            if subjects_file['path'].endswith('.doc'):
+                # Convert subjects file to .docx
+                self.progress_bar_value.emit(78, 'Converting subjects file to .docx...')
+                subjects_file_docx = doc_2_docx_ms_word_win.doc2docx(doc_path=subjects_file['path'], docx_path=os.path.join(self.root_dir, Path('tmp/converted_documents_docx'), subjects_file['path'].split(os.sep)[-1].replace('.doc', '.docx')))
+                print(f'Converted subjects file to .docx: {subjects_file}')
+                self.doc_map[subjects_file['path']] = subjects_file_docx
+                self.updated_results.emit({'Subjects file converted to .docx: ': subjects_file_docx})
+                self.update_doc_map.emit(self.doc_map)
+                subjects_file_path = self.doc_map[subjects_file['path']]
+            # Convert subjects file to .html
+            self.progress_bar_value.emit(80, 'Converting subjects file to .html...')
+            subjects_file = docx_to_md_html.convert_docx_file(root_dir=self.root_dir, docx_path=subjects_file_path, file_name='subjects_file', processed_dir='tmp/converted_documents_md_html', output_format='html')
+            print(f'Converted subjects file to .html: {subjects_file}')
+            print('Converting cyrillic characters to latin characters...')
+            with open(subjects_file, 'r', encoding='utf-8') as f:
+                subjects_file_txt = f.read()
+                subjects_file_txt = cyrillic_to_latin.cyrillic_to_latin(subjects_file_txt)
+            print('Saving file with latin characters...')
+            with open(subjects_file.replace('.html', '_lat.html'), 'w', encoding='utf-8') as f:
+                f.write(subjects_file_txt)
+            if subjects_file_txt != '':
+                self.progress_bar_value.emit(82, 'Listing subjects file content...')
+                print(f'Subjects file loaded. Reading...')
+                subjects_data, subjects_save_path = verify_data.read_subjects(root_dir=self.root_dir, subjects_file_txt=subjects_file_txt)
+                self.updated_results.emit({'Subjects file read': subjects_data})
+                self.updated_results.emit({'Subjects file saved to file': subjects_save_path})
+            # TODO: compare lists.
+
 
 
 

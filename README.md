@@ -46,6 +46,7 @@ Automated reading and checkup of university acreditation documentation files.
   | PyQt5 | pip install PyQt5 | conda install conda-forge::pyqt |
   | pyqtspinner | pip install pyqtspinner | :x: |
   | mammoth | pip install mammoth | conda install auto::mammoth |
+  | pandas | pip install pandas | conda install anaconda::pandas |
   ---
 
 
@@ -129,3 +130,11 @@ Automated reading and checkup of university acreditation documentation files.
       - Absolute and relative paths in hyperlinks supported
     - Renaming files while reading directory structure
       - Replacing cyrillic characters with latin characters in files/directories names
+  - 0.0.7 - Reading professors file
+    - .html file is loaded, separated into tables
+    - Tables are read using pandas
+      - List of professors is extracted from the first table
+      - Each professor data is extracted from other tables
+    - Extracted professors data is saved to a file
+    - Subjects file
+      - File is found, converted to .docx and then to .html

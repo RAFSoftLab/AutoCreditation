@@ -50,6 +50,8 @@ def convert_docx_file(root_dir, docx_path, file_name='', processed_dir='tmp/conv
         with open(file_path, 'rb') as f:
             res = mammoth.convert_to_html(f)
             html = res.value
+            # remove images
+            html = re.sub(r'\<img src\=.*?\>', '', html)
             with open(file_name, 'w', encoding='utf-8') as f:
                 f.write(html)
     # Convert .docx file to .md

@@ -21,6 +21,7 @@ def doc2docx(doc_path, docx_path):
 
     doc_path = str(doc_path) if type(doc_path) == Path else doc_path
     docx_path = str(docx_path) if type(docx_path) == Path else docx_path
+    docx_path = docx_path[:-1] if docx_path[-1] == '.' and not (docx_path.endswith('.docx') or docx_path.endswith('.doc')) else docx_path
 
     if sys.platform.startswith('win'):
         try:
