@@ -5,7 +5,8 @@ Run the GUI application.
 import os
 import sys
 
-import src.gui as gui
+# import src.gui as gui
+import src.gui.gui as gui
 
 root_dir = os.path.dirname(__file__)
 
