@@ -1,6 +1,7 @@
 """
-GUI application for AutoCreditation.
+GUI application for AutoCreditation
 """
+
 
 import json
 import os
@@ -12,7 +13,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QPixmap, QFont
 import PyQt5.QtGui as QtGui
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QDesktopWidget, QMessageBox, QTextEdit, QWidget, QLabel, QComboBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QSystemTrayIcon, QPushButton, QDesktopWidget, QLineEdit, QTextEdit, QWidget, QLabel, QCheckBox, QGridLayout, QVBoxLayout, QProgressBar
 # TODO Remove after debugging:
 import debugpy
 from pyqtspinner.spinner import WaitingSpinner
@@ -26,30 +27,32 @@ import src.doc_2_docx_ms_word_win as doc_2_docx_ms_word_win
 
 dirName = os.path.dirname(__file__)
 
-
-
 class MainWindow(QMainWindow):
     """
-    Main window of the application.
+    Main window of the GUI application
     """
+
 
     def __init__(self, root_dir):
         super(MainWindow, self).__init__()
         doc_dir = ''
         root_dir = root_dir
-        print(root_dir)
+        print(f"Application root directory: {root_dir}")
         util.install_office_package()
         self.initUI(root_dir=root_dir, doc_dir=doc_dir)
 
     def initUI(self, root_dir='', doc_dir=''):
+        """
+        Initializes the GUI application
+        """
+
         self.setWindowTitle("AutoCreditation")
-        self.setGeometry(100, 100, 1000, 800)
-        # TODO: resizable window?
-        self.setFixedSize(1000, 800)
+        # self.setGeometry(100, 100, 800, 600)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(os.path.join(dirName, Path("resources/raf_logo_win.png"))), QtGui.QIcon.Normal, QtGui.QIcon.On)
         self.setWindowIcon(icon)
-        # self.setStyleSheet("background-color: rgb(255, 255, 255);")
+        self.trayIcon = QSystemTrayIcon(self)
+        self.trayIcon.setIcon(icon)
 
         self.root_dir = root_dir
         self.doc_dir = doc_dir
@@ -58,51 +61,80 @@ class MainWindow(QMainWindow):
         self.valid_doc_dir = False
         self.clean_tmp = True
         self.copy_files = True
+        self.finished = False
         self.output_text = ''
         self.erorrs = []
         self.doc_map = {}
 
-        self.center()
+        # self.center()
 
         # # # - - - GUI elements - - - # # #
 
-        self.doc_dir_label = QtWidgets.QLabel(self)
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
+
+        self.main_layout = QVBoxLayout()
+        self.control_panel = QGridLayout()
+        self.progress_panel = QGridLayout()
+        self.output_panel = QGridLayout()
+
+        # # # - - - GUI elements - - - # # #
+
+        self.doc_dir_label = QLabel(self)
         self.doc_dir_label.setText("Documentation directory:")
         self.doc_dir_label.move(10, 10)
         self.doc_dir_label.adjustSize()
+        self.control_panel.addWidget(self.doc_dir_label, 0, 0, 1, 3, alignment=Qt.AlignmentFlag.AlignBottom)
 
         # Documentation directory path label
-        self.doc_dir_text_line = QtWidgets.QLineEdit(self)
+        self.doc_dir_text_line = QLineEdit(self)
         self.doc_dir_text_line.setText(self.doc_dir)
-        self.doc_dir_text_line.setFixedWidth(480)
+        # self.doc_dir_text_line.setFixedWidth(480)
+        self.doc_dir_text_line.setMinimumWidth(self.doc_dir_text_line.fontMetrics().averageCharWidth() * 100)
         self.doc_dir_text_line.move(10, 30)
         self.doc_dir_text_line.setToolTip("Select the folder where the documentation files are located.")
         self.doc_dir_text_line.textChanged.connect(self.update_doc_dir)
         self.doc_dir_text_line.textChanged.connect(self.update_valid_doc_dir)
+        self.control_panel.addWidget(self.doc_dir_text_line, 1, 0, 1, 3)
 
         # Documentation directory selection button
-        self.choose_doc_dir_button = QtWidgets.QPushButton(self)
+        self.choose_doc_dir_button = QPushButton(self)
         self.choose_doc_dir_button.setText("Choose directory")
         self.choose_doc_dir_button.move(500, 30)
-        self.choose_doc_dir_button.setFixedWidth(150)
+        # self.choose_doc_dir_button.setFixedWidth(150)
+        self.choose_doc_dir_button.setMinimumWidth(150)
         self.choose_doc_dir_button.clicked.connect(self.choose_doc_dir)
+        self.control_panel.addWidget(self.choose_doc_dir_button, 1, 3)
 
         # Run button
-        self.run_button = QtWidgets.QPushButton(self)
+        self.run_button = QPushButton(self)
         self.run_button.setText("Run")
         self.run_button.move(500, 60)
-        self.run_button.setFixedWidth(150)
+        # self.run_button.setFixedWidth(150)
+        self.run_button.setMinimumWidth(150)
         self.set_run_button_enabled(False)
         self.run_button.clicked.connect(self.run)
+        self.control_panel.addWidget(self.run_button, 2, 3)
+
+        # Results button
+        self.results_button = QPushButton(self)
+        self.results_button.setText("Results")
+        self.results_button.move(660, 90)
+        self.results_button.setMinimumWidth(150)
+        self.results_button.setEnabled(self.finished)
+        # TODO:
+        # self.results_button.clicked.connect(self.results)
+        self.control_panel.addWidget(self.results_button, 2, 4)
 
         # Valid directory check label
-        self.valid_doc_dir_label = QtWidgets.QLabel(self)
+        self.valid_doc_dir_label = QLabel(self)
         self.update_valid_doc_dir()
         self.valid_doc_dir_label.move(10, 60)
         self.valid_doc_dir_label.adjustSize()
+        self.control_panel.addWidget(self.valid_doc_dir_label, 2, 0, 1, 3, alignment=Qt.AlignmentFlag.AlignTop)
 
         # Clean /tmp directory
-        self.clean_tmp_checkbox = QtWidgets.QCheckBox(self)
+        self.clean_tmp_checkbox = QCheckBox(self)
         self.clean_tmp_checkbox.setText("Clean /tmp directory")
         self.clean_tmp_checkbox.adjustSize()
         self.clean_tmp_checkbox.setToolTip("Clean the /tmp directory before running the application.")
@@ -110,21 +142,27 @@ class MainWindow(QMainWindow):
         self.clean_tmp_checkbox.setFixedHeight(self.choose_doc_dir_button.height())
         self.clean_tmp_checkbox.setChecked(True)
         self.clean_tmp_checkbox.clicked.connect(self.update_clean_tmp)
+        self.control_panel.addWidget(self.clean_tmp_checkbox, 1, 4, 1, 2)
 
         # Results and output text area
         self.results_text_area = QTextEdit(self)
         self.results_text_area.setReadOnly(True)
-        self.results_text_area.move(10, 130)
-        self.results_text_area.resize(980, 650)
+        # self.results_text_area.move(10, 130)
+        # self.results_text_area.resize(980, 800)
+        self.results_text_area.setMinimumHeight(self.results_text_area.fontMetrics().height() * 30)
+        self.results_text_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.results_text_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.output_panel.addWidget(self.results_text_area, 0, 0)
 
         # Running spinner
         self.running_spinner = WaitingSpinner(self.results_text_area, True, True, Qt.ApplicationModal)
 
         # Progress bar
-        self.progress_bar = QtWidgets.QProgressBar(self)
+        self.progress_bar = QProgressBar(self)
         self.progress_bar.setMaximum(100)
-        self.progress_bar.setGeometry(QtCore.QRect(10, 100, 200, 20))
+        # self.progress_bar.setGeometry(QtCore.QRect(10, 100, 200, 20))
         self.progress_bar.setVisible(False)
+        self.progress_panel.addWidget(self.progress_bar, 0, 0, 1, 2)
 
         # Progress description
         self.progress_desc_label = QLabel(self)
@@ -132,14 +170,26 @@ class MainWindow(QMainWindow):
         self.progress_desc_label.setText('')
         # self.progress_desc_label.setAlignment(Qt.AlignCenter)
         self.progress_desc_label.move(230, 100)
-        self.progress_desc_label.adjustSize()
+        # self.progress_desc_label.adjustSize()
+        self.progress_panel.addWidget(self.progress_desc_label, 0, 2, 1, 3)
 
         # Logo
         self.logo_label = QLabel(self)
-        self.logo_label.setPixmap(QPixmap(os.path.join(dirName, Path("resources/raf_logo_no_bg.png"))).scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        self.logo_label.setPixmap(QtGui.QPixmap(os.path.join(dirName, Path("resources/raf_logo_no_bg.png"))).scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         self.logo_label.adjustSize()
         self.logo_label.move(self.width() - 10 - self.logo_label.width(), self.results_text_area.y() - self.logo_label.height() - 5)
         self.logo_label.show()
+
+        self.control_panel_area = QGridLayout()
+        self.control_panel_area.addLayout(self.control_panel, 0, 0, alignment=Qt.AlignmentFlag.AlignTop)
+        self.control_panel_area.addWidget(self.logo_label, 0, 1, alignment=Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTop)
+        self.control_panel_area.addLayout(self.progress_panel, 1, 0)
+
+        self.main_layout.addLayout(self.control_panel_area, stretch=1)
+        self.main_layout.addLayout(self.output_panel, stretch=2)
+        # self.main_layout.setRowStretch(0, 0)
+        # self.main_layout.setRowStretch(1, 1)
+        self.central_widget.setLayout(self.main_layout)
 
     # # # - - - GUI functions - - - # # #
 
@@ -309,6 +359,8 @@ class MainWindow(QMainWindow):
         """
         self.lock_gui(lock=False)
         self.running_spinner.stop()
+        self.finished = True
+        self.results_button.setEnabled(True)
 
     def run(self):
         """
@@ -336,8 +388,6 @@ class MainWindow(QMainWindow):
         self.worker.finished.connect(self.thread.quit)
         self.worker.finished.connect(self.finished_run)
         self.thread.start()
-
-
 
 
 
@@ -375,7 +425,6 @@ class Worker(QObject):
 
         self.progress_bar_value.emit(0 if self.clean_tmp == False else 5, 'Copying documentation files and reading directory structure...')
         # Directory reading
-        # TODO: optional copying ???
         doc_structure, dir_tree, self.files_dir = directory_reading.copy_read_doc_dir(root_dir=self.root_dir, documentation_dir=self.doc_dir, clear_dir=self.clean_tmp, overwrite=True, load_struct=True, convert_names_to_latin=True)
         self.updated_results.emit({'Documentation directory structure': doc_structure})
         # Finding main documentation file
@@ -451,7 +500,7 @@ class Worker(QObject):
                 self.progress_bar_value.emit(60, 'Reading professors file...')
                 professors_file_path = professors_file['path']
                 # TODO: remove platform check
-                # TODO: move to separate function
+                # TODO: move to separate function?
                 if professors_file['path'].endswith('.doc') and sys.platform.startswith('win') or sys.platform.startswith('linux'):
                     file_name = professors_file['path'].split(os.sep)[-1]
                     professors_file_docx = doc_2_docx_ms_word_win.doc2docx(doc_path=professors_file['path'], docx_path=os.path.join(self.root_dir, Path('tmp/converted_documents_docx'), file_name.replace('.doc', '.docx')))
@@ -534,7 +583,14 @@ class Worker(QObject):
                 subjects_data, subjects_save_path = verify_data.read_subjects(root_dir=self.root_dir, subjects_file_txt=subjects_file_txt)
                 self.updated_results.emit({'Subjects file read': subjects_data})
                 self.updated_results.emit({'Subjects file saved to file': subjects_save_path})
-            # TODO: compare lists.
+
+        # Compare professors and subjects data
+        if subjects_data != [] and professors_data != []:
+            self.progress_bar_value.emit(85, 'Comparing professors and subjects data...')
+            print('Comparing professors and subjects data...')
+            compare_results = verify_data.compare_prof_and_subj_data(root_dir=self.root_dir, prof_data=professors_data, subj_data=subjects_data)
+
+            # TODO: add to gui results, to gui errors.
 
 
 
