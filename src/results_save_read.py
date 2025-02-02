@@ -36,22 +36,26 @@ def save_results(root_dir, results):
     with open(os.path.join(save_dir, Path('results.json')), 'w', encoding='utf-8') as f:
         json.dump(new_results, f, indent=4)
 
-def load_results(root_dir, save_dir=''):
+def load_results(root_dir, save_dir='', abs_path=''):
     """
     Loads the results from a file.
 
     Args:
         root_dir (str):          Root directory of the project, absolute path
         save_dir (str):          Relative path to the directory where the results are saved. If not given, uses 'tmp/results'. (Default '')
+        abs_path (str):          Absolute path to the results file. If not given, it is formed with root_dir and save_dir. (Default '')
 
     Returns:
         (list):                  List of results
     """
-
-    save_dir = Path(save_dir) if save_dir != '' else Path('tmp/results')
-    save_dir = os.path.join(root_dir, save_dir)
-    if not os.path.exists(save_dir):
+    if abs_path == '':
+        save_dir = Path(save_dir) if save_dir != '' else Path('tmp/results')
+        save_dir = os.path.join(root_dir, save_dir)
+        file_path = os.path.join(save_dir, Path('results.json'))
+    else:
+        file_path = abs_path
+    if not os.path.exists(file_path):
         return []
-    with open(os.path.join(Path(save_dir), 'results.json'), 'r', encoding='utf-8') as f:
+    with open(file_path, 'r', encoding='utf-8') as f:
         results = json.load(f)
     return results

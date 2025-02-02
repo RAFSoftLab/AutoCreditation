@@ -416,7 +416,7 @@ class Worker(QObject):
 
         # Finding hyperlinks to files
         self.progress_bar_value.emit(40, 'Finding hyperlinks to files...')
-        found_hyperlinks = util.find_link_tags(root_dir=self.root_dir, doc_dir=self.files_dir, md_file_txt=md_file_txt, file_format='html')
+        found_hyperlinks = util.find_link_tags(root_dir=self.root_dir, doc_dir=self.files_dir, html_file_txt=md_file_txt, file_format='html')
         print(f"Found hyperlinks: \n{json.dumps(found_hyperlinks, indent=4)}")
         self.updated_results.emit({'Found hyperlinks': found_hyperlinks})
 
