@@ -18,6 +18,7 @@ from itertools import islice
 import re
 import shutil
 import sys
+import pandas as pd
 
 import src.util as util
 import src.cyrillyc_to_latin as cyrillic_to_latin
@@ -289,14 +290,63 @@ def find_main_doc(docs):
             break
     return main_doc
 
-def find_link_tags(root_dir, doc_dir, md_file_txt, file_format='md'):
+def find_studies_programme(root_dir, html_file_lat):
+    """
+    Finds the name of the studies programme in the given .html file.
+
+    Args:
+        root_dir (str):        Root directory of the project, absolute path
+        html_file_lat (str):   .html file content or absolute path to a saved converted .html file
+
+    Returns:
+        (str):                 Name of the studies programme
+    """
+
+    # Read file if path is given
+    if os.path.exists(html_file_lat) and os.path.isfile(html_file_lat):
+        html_file_lat_txt = ''
+        with open(html_file_lat, 'r', encoding='utf-8') as f:
+            html_file_lat_txt = html_file_lat.read()
+        if html_file_lat_txt != '':
+            html_file_lat = html_file_lat_txt
+        else:
+            raise Exception('File not found or empty')
+
+    studies_programme = ''
+    studies_programme_found = False
+    tables_in_file = re.findall(r'\<table\>.*?\<\/table\>', html_file_lat)
+    for table in tables_in_file:
+        if studies_programme_found == True:
+            break
+        if not re.search(r'Naziv\s*(?:studijskog)*\s*programa|Studijski\s*program', table, re.I):
+            continue
+        table_read = pd.read_html(table)[0]
+        print(f"Studies programme table: \n{table_read}")
+        for index, row in enumerate(table_read.values):
+            if True not in [True if re.search(r'Naziv\s*(?:studijskog)*\s*programa|Studijski\s*program', i, re.I) else False for i in row]:
+                continue
+            for indexCol, col in enumerate(row):
+                if not re.search(r'Naziv\s*(?:studijskog)*\s*programa|Studijski\s*program', col, re.I):
+                    continue
+                if len(row) > indexCol + 1:
+                    studies_programme = row[indexCol + 1]
+                else:
+                    colName = re.findall(r'Naziv\s*(?:studijskog)*\s*programa|Studijski\s*program', col, re.I)[0]
+                    studies_programme = re.sub(re.escape(colName), '', col)
+                studies_programme_found = True
+                break
+            break
+    results_save_read.save_results(root_dir=root_dir, results={'studies_programme': studies_programme})
+    return studies_programme
+
+def find_link_tags(root_dir, doc_dir, html_file_txt, file_format='md'):
     """
     Finds all link tags in the given .md file.
 
     Args:
         root_dir (str):        Root directory of the project, absolute path
         doc_dir (str):         Absolute path to the documentation directory
-        md_file_txt (str):     .md or .html file content
+        html_file_txt (str):     .md or .html file content
         file_format (str):     (Optional) File format of the file, either 'md' or 'html'. Default is 'md'
 
     Returns:
@@ -308,11 +358,11 @@ def find_link_tags(root_dir, doc_dir, md_file_txt, file_format='md'):
     link_tags = []
 
     if file_format == 'md':
-        for line in md_file_txt.split('\n'):
+        for line in html_file_txt.split('\n'):
             if re.search(r'\(file\:', line) or re.search(r'\(\.\.\{}'.format(os.sep), line):
                 link_tag_lines.append(line)
     else:
-        link_tag_lines = re.findall(r'\<p\>.*?\<a href\=.*?\<\/a\>.*?\<\/p\>', md_file_txt)
+        link_tag_lines = re.findall(r'\<p\>.*?\<a href\=.*?\<\/a\>.*?\<\/p\>', html_file_txt)
 
     # Save link tag lines to a file
     if not os.path.exists(os.path.join(root_dir, Path('tmp'))):
