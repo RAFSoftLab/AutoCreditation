@@ -565,3 +565,119 @@ def update_hyperlinks(root_dir, new_hyperlinks):
         os.makedirs(os.path.join(root_dir, Path('tmp')))
     with open(os.path.join(root_dir, Path('tmp/found_file_links.json')), 'w', encoding='utf-8') as f:
         json.dump(new_hyperlinks, f, indent=4)
+
+
+# def create_table_html(data, table_name):
+#     """
+#     """
+
+#     prof_to_subj_not_found_html = ''
+#     prof_data_header = ''
+#     for indexD, prof_data in enumerate(data):
+#         if prof_data == 'studies_programme':
+#             continue
+#         prof_data_elem = ''
+#         prof_data_data = ''
+#         for key in data[prof_data]:
+#             if indexD == 0:
+#                 prof_data_header += f"<td>{key}</td>"
+#             if key != 'potential_matches':
+#                 prof_data_data += f"<td>{data[prof_data][key]}</td>"
+#             else:
+#                 match_items_html = ''
+#                 for match_item in data[prof_data][key]:
+#                     item_html = ''
+#                     for key in match_item.keys():
+#                         item_html += f"<li>{key}: {match_item[key]}</li>"
+#                     match_html = f"<ul>{item_html}</ul>"
+#                     match_items_html += f"{match_html}\n"
+#                 prof_data_data += f"<td>{match_items_html}</td>"
+#         prof_to_subj_not_found_html += f"<tr>{prof_data_data}</tr>"
+#     return prof_to_subj_not_found_html, prof_data_header
+
+# def convert_res_to_html(root_dir, data_type='', abs_path=''):
+#     """
+#     """
+
+#     if abs_path == '':
+#         if data_type == 'results':
+#             abs_path = os.path.join(root_dir, Path('tmp/results/results.json'))
+#         elif data_type in ['professors', 'professors_data']:
+#             abs_path = os.path.join(root_dir, Path('tmp/professors_data.json'))
+#         elif data_type in ['subjects', 'subjects_data']:
+#             abs_path = os.path.join(root_dir, Path('tmp/subjects_data.json'))
+#     res_html = ''
+#     with open(abs_path, 'r', encoding='utf-8') as f:
+#         data = json.load(f, strict=False)
+
+#     # Results data
+#     if data_type == 'results':
+#         for table_name in data.keys():
+#             if table_name == 'studeis_programme':
+#                 res_html += f"<h1>Studies programme</h1>\n"
+#             if table_name == 'unmatched_hyperlinks':
+#                 hyperlinks_html = ''
+#                 for hyperlink in data[table_name]:
+#                     hyperlinks_html += f"<li>{hyperlink}</li>"
+#                 res_html += f'<h2>Unmatched hyperlinks</h2>\n<ul>{hyperlinks_html}</ul>\n'
+#             # if table_name == 'prof_to_subj_not_found':
+#             else:
+#                 if type(data[table_name]) != list and table_name != 'filtered_results':
+#                     print(f"Error: table {table_name} is not a list.")
+#                     continue
+#                 if table_name == 'filtered_results':
+#                     res_table = '<h2>Filtered results</h2>\n'
+#                     for indexD, data_item in enumerate(data[table_name].keys()):
+#                         if data_item == 'studies_programme':
+#                             continue
+#                         res_table += f"<h3>Item {data_item}</h3>\n{create_table_html(data=data[table_name], table_name=data_item)}"
+#                 else:
+#                     prof_to_subj_not_found_html, prof_data_header = create_table_html(data=data, table_name=table_name)
+
+#                 # prof_to_subj_not_found_html = ''
+#                 # prof_data_header = ''
+#                 # for indexD, prof_data in enumerate(data[table_name]):
+#                 #     prof_data_elem = ''
+#                 #     prof_data_data = ''
+#                 #     for key in prof_data.keys():
+#                 #         if indexD == 0:
+#                 #             prof_data_header += f"<td>{key}</td>"
+#                 #         if key != 'potential_matches':
+#                 #             prof_data_data += f"<td>{prof_data[key]}</td>"
+#                 #         else:
+#                 #             match_items_html = ''
+#                 #             for match_item in prof_data[key]:
+#                 #                 item_html = ''
+#                 #                 for key in match_item.keys():
+#                 #                     item_html += f"<li>{key}: {match_item[key]}</li>"
+#                 #                 match_html = f"<ul>{item_html}</ul>"
+#                 #                 match_items_html += f"{match_html}\n"
+#                 #             prof_data_data += f"<td>{match_items_html}</td>"
+#                 #     prof_to_subj_not_found_html += f"<tr>{prof_data_data}</tr>"
+#                 res_html += f"<h2>Professors to subjects comparison</h2>\n<table border=1 frame=void rules=rows>{prof_data_header}\n{prof_to_subj_not_found_html}</table>\n"
+
+#     save_dir = os.path.join(root_dir, Path('tmp/results_html'))
+#     if not os.path.exists(save_dir):
+#         os.makedirs(save_dir)
+#     with open(os.path.join(save_dir, f"{data_type}.html"), 'w', encoding='utf-8') as f:
+#         f.write(res_html)
+
+# def convert_filtered_res_to_html(root_dir, abs_path=''):
+    # """
+    # """
+
+    # abs_path = os.path.join(root_dir, Path('tmp/results/results.json')) if abs_path == '' else abs_path
+    # filtered_res_html = ''
+    # with open(abs_path, 'r', encoding='utf-8') as f:
+    #     data = json.load(f, strict=False)
+    # for table_name in data.keys():
+    #     if table_name != 'filtered_results':
+    #         continue
+    #     filtered_results = data[table_name]
+    #     table, header = create_table_html(data=filtered_results, table_name=table_name)
+    #     filtered_res_html += f"<h2>Filtered results</h2>\n<table border=1 frame=void rules=rows>{header}\n{table}</table>\n"
+    # save_dir = os.path.join(root_dir, Path('tmp'))
+    # if not os.path.exists(save_dir):
+    #     os.makedirs(save_dir)
+    # with open(os.path.join(save_dir, "filtered_results.html"), 'w', encoding='utf-8') as f:
+    #     f.write(filtered_res_html)
