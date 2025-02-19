@@ -64,7 +64,7 @@ def find_subjects_file(root_dir, links, search_regex=''):
 
     return subjects_file[0] if len(subjects_file) > 0 else []
 
-def extract_proffesor_table(prof_table):
+def extract_professor_table(prof_table):
     """
     Extracts professor table data from the given table.
 
@@ -211,6 +211,10 @@ def read_professors(root_dir, professors_file_txt):
         (list):                      List of tables (each table represented by a dictionary)
     """
 
+    # Load extracted data
+    data = {}
+    if os.path.exists(os.path.join(root_dir, Path('tmp/results/results.json'))):
+        data = results_save_read.load_results(root_dir=root_dir)
 
     tables_in_file = re.findall(r'\<table\>.*?\<\/table\>', professors_file_txt)
     read_tables = []
@@ -237,7 +241,18 @@ def read_professors(root_dir, professors_file_txt):
             table_data.append({'type': 'prof_list', 'data': table_vals, 'header': header})
             continue
         # Other tables are professor tables
-        professor_table = extract_proffesor_table(prof_table=table_read)
+        professor_table = extract_professor_table(prof_table=table_read)
+        subjects_filter_programme = []
+        if data != {} and ('studies_programme' in data.keys() or 'studies_type' in data.keys()):
+            studies_programme = data['studies_programme'] if 'studies_programme' in data.keys() else ''
+            studies_type = data['studies_type'] if 'studies_type' in data.keys() else ''
+            for subject in professor_table['subjects']:
+                if studies_type != '' and re.search(studies_type, subject['studies_type']):
+                    subjects_filter_programme.append(subject)
+                elif studies_programme != '' and re.search(studies_programme, subject['studies_programme']):
+                    subjects_filter_programme.append(subject)
+            professor_table['subjects_all'] = professor_table['subjects']
+            professor_table['subjects'] = subjects_filter_programme
         prof_tables.append(professor_table)
     table_data.append({'type': 'prof_tables', 'data': prof_tables, 'header': prof_tables[0]['subjects_header'] if len(prof_tables) > 0 else []})
     # Save found data
@@ -257,6 +272,11 @@ def read_subjects(root_dir, subjects_file_txt):
     Returns:
         (list):                      List of tables (each table represented by a dictionary)
     """
+
+    # Load extracted data
+    data = {}
+    if os.path.exists(os.path.join(root_dir, Path('tmp/results/results.json'))):
+        data = results_save_read.load_results(root_dir=root_dir)
 
     tables_in_file = re.findall(r'\<table\>.*?\<\/table\>', subjects_file_txt)
     read_tables = []
@@ -291,7 +311,20 @@ def read_subjects(root_dir, subjects_file_txt):
         # Other tables are subjects tables
         subjects_table = extract_subjects_table(subj_table=table_read)
         subjects_tables.append(subjects_table)
-    table_data.append({'type': 'subj_tables', 'data': subjects_tables, 'header': subjects_tables[0]['subjects_header'] if len(subjects_tables) > 0 else []})
+    subj_tables_filter_programme = []
+    if data != {} and ('studies_programme' in data.keys() or 'studies_type' in data.keys()):
+        studies_programme = data['studies_programme'] if 'studies_programme' in data.keys() else ''
+        studies_type = data['studies_type'] if 'studies_type' in data.keys() else ''
+        for subj_table in subjects_tables:
+            s_p = True if studies_programme == '' else False
+            s_t = True if studies_type == '' else False
+            if s_p == True:
+                s_p = True if re.search(studies_programme, subj_table['studies_programme']) else False
+            if s_t == True:
+                s_t = True if re.search(studies_type, subj_table['studies_type']) else False
+            if s_p == True and s_t == True:
+                subj_tables_filter_programme.append(subj_table)
+    table_data.append({'type': 'subj_tables', 'data': subj_tables_filter_programme, 'data_all': subjects_tables, 'header': subjects_tables[0]['subjects_header'] if len(subjects_tables) > 0 else []})
     # Save found data
     save_path = util.save_data(root_dir=root_dir, data=table_data, save_dir='tmp', data_name='subjects_data')
     print(f'Saved subjects data to {save_path}')

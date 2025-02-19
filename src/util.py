@@ -79,7 +79,6 @@ def process_name(name, file=False, skip_ext=True):
     return '{}.{}'.format(re.escape(name), ext)
 
 
-# TODO: clean code
 def tree(dir_path: Path, level: int=-1, limit_to_directories: bool=False, length_limit: int=1000, save_dir: str='', print_tree=True):
     '''
     Given a directory Path object print a visual tree structure
@@ -312,32 +311,44 @@ def find_studies_programme(root_dir, html_file_lat):
         else:
             raise Exception('File not found or empty')
 
-    studies_programme = ''
+    studies_programme, studies_type = '', ''
     studies_programme_found = False
+    stud_type_found = False
     tables_in_file = re.findall(r'\<table\>.*?\<\/table\>', html_file_lat)
     for table in tables_in_file:
-        if studies_programme_found == True:
+        if studies_programme_found == True and stud_type_found == True:
             break
         if not re.search(r'Naziv\s*(?:studijskog)*\s*programa|Studijski\s*program', table, re.I):
             continue
         table_read = pd.read_html(table)[0]
         print(f"Studies programme table: \n{table_read}")
         for index, row in enumerate(table_read.values):
-            if True not in [True if re.search(r'Naziv\s*(?:studijskog)*\s*programa|Studijski\s*program', i, re.I) else False for i in row]:
+            if studies_programme_found == True and stud_type_found == True:
+                break
+            if True not in [True if re.search(r'Naziv\s*(?:studijskog)*\s*programa|Studijski\s*program|Vrsta\s*studija', i, re.I) else False for i in row]:
                 continue
             for indexCol, col in enumerate(row):
-                if not re.search(r'Naziv\s*(?:studijskog)*\s*programa|Studijski\s*program', col, re.I):
-                    continue
-                if len(row) > indexCol + 1:
-                    studies_programme = row[indexCol + 1]
-                else:
-                    colName = re.findall(r'Naziv\s*(?:studijskog)*\s*programa|Studijski\s*program', col, re.I)[0]
-                    studies_programme = re.sub(re.escape(colName), '', col)
-                studies_programme_found = True
-                break
-            break
-    results_save_read.save_results(root_dir=root_dir, results={'studies_programme': studies_programme})
-    return studies_programme
+                if studies_programme_found == False and re.search(r'Naziv\s*(?:studijskog)*\s*programa|Studijski\s*program', col, re.I):
+                    if len(row) > indexCol + 1:
+                        studies_programme = row[indexCol + 1]
+                    else:
+                        colName = re.findall(r'Naziv\s*(?:studijskog)*\s*programa|Studijski\s*program', col, re.I)[0]
+                        studies_programme = re.sub(re.escape(colName), '', col)
+                    studies_programme_found = True
+                    break
+                elif stud_type_found == False and re.search(r'Vrsta\s*studija', col, re.I):
+                    if len(row) > indexCol + 1:
+                        studies_type = row[indexCol + 1]
+                        if not re.search(r'^[A-Z]$', studies_type) and len(studies_type.split()) > 0:
+                            studies_type = ''.join([i[0].upper() for i in studies_type.split()])
+                    else:
+                        colName = re.findall(r'Vrsta\s*studija', col, re.I)[0]
+                        studies_type = re.sub(re.escape(colName), '', col)
+                    stud_type_found = True
+                    break
+
+    results_save_read.save_results(root_dir=root_dir, results={'studies_programme': studies_programme, 'studies_type': studies_type})
+    return {'studies_programme': studies_programme, 'studies_type': studies_type}
 
 def find_link_tags(root_dir, doc_dir, html_file_txt, file_format='md'):
     """
