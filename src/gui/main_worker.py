@@ -47,6 +47,8 @@ class Worker(QObject):
         print("Running main script...")
         self.progress_bar_visibility.emit(True)
 
+        self.updated_results.emit({'run_dir': f"Verification for documents in root directory: {self.doc_dir}"})
+
         if self.clean_tmp == True:
             self.progress_bar_value.emit(0, 'Clearing /tmp directory...')
             util.clear_tmp_dir(root_dir=self.root_dir)
@@ -95,9 +97,9 @@ class Worker(QObject):
 
         # Finding studies program
         self.progress_bar_value.emit(27, 'Finding studies program...')
-        studies_programme = util.find_studies_programme(root_dir=self.root_dir, html_file_lat=html_file_txt)
-        self.updated_results.emit({'Studies programme': studies_programme})
-        print(f"Studies programe: {studies_programme}")
+        studies_programme_and_type = util.find_studies_programme(root_dir=self.root_dir, html_file_lat=html_file_txt)
+        self.updated_results.emit({'Studies programme': studies_programme_and_type['studies_programme'], 'Studies type': studies_programme_and_type['studies_type']})
+        print(f"Studies programe: {studies_programme_and_type['studies_programme']}\nStudies type: {studies_programme_and_type['studies_type']}")
 
 
         # Finding hyperlinks to files
