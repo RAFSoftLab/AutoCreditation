@@ -20,6 +20,7 @@ from pyqtspinner.spinner import WaitingSpinner
 import src.util as util
 
 import src.gui.main_worker as main_worker
+import src.gui.gui_explorer as gui_explorer
 
 dirName = os.path.dirname(__file__)
 
@@ -52,8 +53,7 @@ class MainWindow(QMainWindow):
 
         self.root_dir = root_dir
         self.doc_dir = doc_dir
-        # TODO: remove after testing:
-        self.doc_dir = r'C:/Users/steva/Downloads/Softversko inzenjerstvo (OAS) - original-20241120T100738Z-001/Softversko inzenjerstvo (OAS) - original'
+        self.doc_dir = os.path.expanduser("~")
         self.valid_doc_dir = False
         self.clean_tmp = True
         self.copy_files = True
@@ -118,8 +118,7 @@ class MainWindow(QMainWindow):
         self.results_button.move(660, 90)
         self.results_button.setMinimumWidth(150)
         self.results_button.setEnabled(self.finished)
-        # TODO:
-        # self.results_button.clicked.connect(self.results)
+        self.results_button.clicked.connect(self.open_explorer)
         self.control_panel.addWidget(self.results_button, 2, 4)
 
         # Valid directory check label
@@ -214,7 +213,7 @@ class MainWindow(QMainWindow):
         """
         Open a file dialog to choose a documentation directory.
         """
-        doc_dir = QtWidgets.QFileDialog.getExistingDirectory(self, "Select folder")
+        doc_dir = QtWidgets.QFileDialog.getExistingDirectory(self, "Select folder", os.path.expanduser("~"))
         if doc_dir != '':
             self.update_doc_dir_text_line(doc_dir)
 
@@ -222,7 +221,7 @@ class MainWindow(QMainWindow):
         """
         Check if the documentation directory is valid, and update the valid_doc_dir_label accordingly.
         """
-        self.valid_doc_dir = True if self.doc_dir != '' and os.path.isdir(self.doc_dir) else False
+        self.valid_doc_dir = True if self.doc_dir not in ['', os.path.expanduser("~")] and os.path.isdir(self.doc_dir) else False
         if self.doc_dir == '':
             self.valid_doc_dir_label.setText("No documentation directory selected. Please select one.")
             self.valid_doc_dir_label.setStyleSheet("color: red;")
@@ -313,10 +312,13 @@ class MainWindow(QMainWindow):
             self.results_text_area.setText('\n'.join(results))
         else:
             self.results_text_area.setText(str(results))
-        # if results != '':
+        self.scroll_to_bottom()
+
+    def scroll_to_bottom(self):
+        """
+        Scroll to bottom of the text area.
+        """
         self.results_text_area.verticalScrollBar().setValue(self.results_text_area.verticalScrollBar().maximum())
-        # else:
-        #     self.results_text_area.verticalScrollBar().setValue(0)
 
     @QtCore.pyqtSlot(list)
     def update_errors(self, errors):
@@ -350,6 +352,67 @@ class MainWindow(QMainWindow):
         else:
             self.run_button.setText("Run")
 
+    # def generate_html(self, root_dir=''):
+    #     """
+    #     Generates HTML files from the results.
+    #     """
+    #     self.root_dir = root_dir if root_dir != '' else self.root_dir
+    #     print("Generating HTML files...")
+    #     if os.path.exists(os.path.join(self.root_dir, Path('tmp/results/results.json'))):
+    #         results = util.load_data(root_dir=self.root_dir, abs_path=os.path.join(self.root_dir, Path('tmp/results/results.json')))
+    #         results_html = ''
+    #         if 'studies_programme' in results.keys():
+    #             results_html += f'<h2>Studies programme</h2><p>{results["studies_programme"]}</p>\n'
+    #         if 'studies_type' in results.keys():
+    #             results_html += f'<h2>Studies type</h2><p>{results["studies_type"]}</p>\n'
+    #         if 'unmatched_hyperlinks' in results.keys():
+    #             if len(results["unmatched_hyperlinks"]) == 0:
+    #                 unmatched_hl = 'All hyperlinks verified'
+    #             else:
+    #                 unmatched_hl = ''
+    #                 for item in results["unmatched_hyperlinks"]:
+    #                     if type(item) == dict and 'path' in item.keys():
+    #                         unmatched_hl += f"<li>{item['path']}</li>"
+    #                     else:
+    #                         unmatched_hl += f"<li>{str(item)}</li>"
+    #                 unmatched_hl = f"<ul>{unmatched_hl}</ul>"
+    #             results_html += f'<h2>Unmatched hyperlinks</h2><p>{unmatched_hl}</p>\n'
+    #         if 'prof_to_subj_not_found' in results.keys():
+    #             if len(results["prof_to_subj_not_found"]) == 0:
+    #                 prof_to_subj_not_found = 'Subject tables found for all subjects listed in professors file'
+    #             else:
+    #                 prof_to_subj_not_found = ''
+    #                 for item in results["prof_to_subj_not_found"]:
+    #                     if type(item) == dict:
+    #                         prof_table = f"<th>{''.join([f'<td>{i}</td>' for i in item.keys() if i != 'potential_matches'])}</th><tr>"
+    #                         prof_table += f"<tr>{''.join([f"<td>{item[i]}</td>" for i in item.keys() if i != 'potential_matches'])}</tr>"
+    #                         prof_table = f"<table>{prof_table}</table>"
+    #                         if 'potential_matches' in item.keys():
+    #                             if len(item['potential_matches']) == 0:
+    #                                 prof_table += '<p>No potential subject matches found.</p>'
+    #                             else:
+    #                                 prof_table += '<p>Potential subject matches:</p>'
+    #                                 pot_match_table = f"<th>{''.join([f'<td>{i}</td>' for j in item['potential_matches'] for i in j.keys() if i != 'potential_matches'])}</th><tr>"
+    #                                 pot_match_table += f"<tr>{''.join([f"<td>{item['potential_matches'][i]}</td>" for i in item['potential_matches'].keys() if i != 'potential_matches'])}</tr>"
+    #                                 pot_match_table = f"<table>{pot_match_table}</table>"
+    #                                 prof_table += f"{pot_match_table}"
+    #                         prof_to_subj_not_found += f"{prof_table}<hr>"
+    #                     else:
+    #                         prof_to_subj_not_found += f"{str(item)}<hr>"
+    #                 prof_to_subj_not_found = f"{prof_to_subj_not_found}"
+    #             results_html += f'<h2>Professors to subjects not found</h2><p>{prof_to_subj_not_found}</p>\n'
+
+    #         with open(os.path.join(self.root_dir, Path('tmp/results/results.html')), 'w', encoding='utf-8') as f:
+    #             f.write(results_html)
+    #     print("HTML files generated.")
+
+    def open_explorer(self):
+        """
+        """
+        self.explorer = gui_explorer.FileExplorer(root_dir=self.root_dir)
+        self.explorer.setWindowModality(Qt.ApplicationModal)
+        self.explorer.show()
+
     def finished_run(self):
         """
         Called when the run is finished.
@@ -358,6 +421,9 @@ class MainWindow(QMainWindow):
         self.running_spinner.stop()
         self.finished = True
         self.results_button.setEnabled(True)
+        self.scroll_to_bottom()
+        self.generate_html()
+        self.open_explorer()
 
     def run(self):
         """
@@ -367,7 +433,6 @@ class MainWindow(QMainWindow):
         self.lock_gui()
         self.running_spinner.start()
 
-        # TODO: main runner function. Run scripts, generate results, etc.
         self.thread = QThread()
         self.worker = main_worker.Worker()
         self.worker.setInput(root_dir=self.root_dir, doc_dir=self.doc_dir, clean_tmp=self.clean_tmp, copy_files=self.copy_files)
@@ -378,7 +443,6 @@ class MainWindow(QMainWindow):
         self.worker.updated_results.connect(self.update_results)
         self.worker.update_errors.connect(self.update_errors)
         self.worker.update_doc_map.connect(self.update_doc_map)
-        # TODO: new window for final results
         # self.worker.finished.connect(self.update_results)
         self.worker.finished.connect(self.thread.quit)
         self.worker.finished.connect(self.finished_run)
@@ -386,14 +450,6 @@ class MainWindow(QMainWindow):
 
 
 
-
-
-
-def Worker2(QObject):
-    """
-    Worker thread for results display.
-    """
-    # TODO
 
 
 def window(root_dir):
