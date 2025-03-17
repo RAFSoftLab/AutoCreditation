@@ -14,7 +14,7 @@ from PyQt5.QtGui import QPixmap, QFont
 import PyQt5.QtGui as QtGui
 from PyQt5.QtWidgets import QApplication, QMainWindow, QSystemTrayIcon, QPushButton, QDesktopWidget, QLineEdit, QTextEdit, QWidget, QLabel, QCheckBox, QGridLayout, QVBoxLayout, QProgressBar
 # TODO Remove after debugging:
-import debugpy
+# import debugpy
 from pyqtspinner.spinner import WaitingSpinner
 
 import src.util as util
@@ -352,59 +352,16 @@ class MainWindow(QMainWindow):
         else:
             self.run_button.setText("Run")
 
-    # def generate_html(self, root_dir=''):
-    #     """
-    #     Generates HTML files from the results.
-    #     """
-    #     self.root_dir = root_dir if root_dir != '' else self.root_dir
-    #     print("Generating HTML files...")
-    #     if os.path.exists(os.path.join(self.root_dir, Path('tmp/results/results.json'))):
-    #         results = util.load_data(root_dir=self.root_dir, abs_path=os.path.join(self.root_dir, Path('tmp/results/results.json')))
-    #         results_html = ''
-    #         if 'studies_programme' in results.keys():
-    #             results_html += f'<h2>Studies programme</h2><p>{results["studies_programme"]}</p>\n'
-    #         if 'studies_type' in results.keys():
-    #             results_html += f'<h2>Studies type</h2><p>{results["studies_type"]}</p>\n'
-    #         if 'unmatched_hyperlinks' in results.keys():
-    #             if len(results["unmatched_hyperlinks"]) == 0:
-    #                 unmatched_hl = 'All hyperlinks verified'
-    #             else:
-    #                 unmatched_hl = ''
-    #                 for item in results["unmatched_hyperlinks"]:
-    #                     if type(item) == dict and 'path' in item.keys():
-    #                         unmatched_hl += f"<li>{item['path']}</li>"
-    #                     else:
-    #                         unmatched_hl += f"<li>{str(item)}</li>"
-    #                 unmatched_hl = f"<ul>{unmatched_hl}</ul>"
-    #             results_html += f'<h2>Unmatched hyperlinks</h2><p>{unmatched_hl}</p>\n'
-    #         if 'prof_to_subj_not_found' in results.keys():
-    #             if len(results["prof_to_subj_not_found"]) == 0:
-    #                 prof_to_subj_not_found = 'Subject tables found for all subjects listed in professors file'
-    #             else:
-    #                 prof_to_subj_not_found = ''
-    #                 for item in results["prof_to_subj_not_found"]:
-    #                     if type(item) == dict:
-    #                         prof_table = f"<th>{''.join([f'<td>{i}</td>' for i in item.keys() if i != 'potential_matches'])}</th><tr>"
-    #                         prof_table += f"<tr>{''.join([f"<td>{item[i]}</td>" for i in item.keys() if i != 'potential_matches'])}</tr>"
-    #                         prof_table = f"<table>{prof_table}</table>"
-    #                         if 'potential_matches' in item.keys():
-    #                             if len(item['potential_matches']) == 0:
-    #                                 prof_table += '<p>No potential subject matches found.</p>'
-    #                             else:
-    #                                 prof_table += '<p>Potential subject matches:</p>'
-    #                                 pot_match_table = f"<th>{''.join([f'<td>{i}</td>' for j in item['potential_matches'] for i in j.keys() if i != 'potential_matches'])}</th><tr>"
-    #                                 pot_match_table += f"<tr>{''.join([f"<td>{item['potential_matches'][i]}</td>" for i in item['potential_matches'].keys() if i != 'potential_matches'])}</tr>"
-    #                                 pot_match_table = f"<table>{pot_match_table}</table>"
-    #                                 prof_table += f"{pot_match_table}"
-    #                         prof_to_subj_not_found += f"{prof_table}<hr>"
-    #                     else:
-    #                         prof_to_subj_not_found += f"{str(item)}<hr>"
-    #                 prof_to_subj_not_found = f"{prof_to_subj_not_found}"
-    #             results_html += f'<h2>Professors to subjects not found</h2><p>{prof_to_subj_not_found}</p>\n'
-
-    #         with open(os.path.join(self.root_dir, Path('tmp/results/results.html')), 'w', encoding='utf-8') as f:
-    #             f.write(results_html)
-    #     print("HTML files generated.")
+    def generate_html(self, root_dir=''):
+        """
+        Generates HTML files from the results.
+        """
+        root_dir = root_dir if root_dir != '' else self.root_dir
+        print("Generating HTML files...")
+        try:
+            util.generate_res_html(root_dir=root_dir)
+        except Exception as e:
+            print(f'Error generating HTML files:\n    {e}')
 
     def open_explorer(self):
         """
