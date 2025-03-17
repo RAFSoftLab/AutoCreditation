@@ -5,7 +5,7 @@
 import os
 from pathlib import Path
 import sys
-import debugpy
+# import debugpy
 import json
 
 from PyQt5 import QtCore
@@ -26,7 +26,7 @@ class Worker(QObject):
     Worker thread for the application.
     """
     # TODO Remove after debugging:
-    debugpy.debug_this_thread()
+    # debugpy.debug_this_thread()
     finished = pyqtSignal(dict)
     progress_bar_visibility = pyqtSignal(bool)
     progress_bar_value = pyqtSignal(int, str)

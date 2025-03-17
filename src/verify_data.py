@@ -318,10 +318,10 @@ def read_subjects(root_dir, subjects_file_txt):
         for subj_table in subjects_tables:
             s_p = True if studies_programme == '' else False
             s_t = True if studies_type == '' else False
-            if s_p == True:
+            if s_p == False:
                 s_p = True if re.search(studies_programme, subj_table['studies_programme']) else False
-            if s_t == True:
-                s_t = True if re.search(studies_type, subj_table['studies_type']) else False
+            if s_t == False and 'studies_type' in subj_table.keys() or 'studies_programme' in subj_table.keys():
+                s_t = True if re.search(studies_type, subj_table['studies_type' if 'studies_type' in subj_table.keys() else 'studies_programme']) else False
             if s_p == True and s_t == True:
                 subj_tables_filter_programme.append(subj_table)
     table_data.append({'type': 'subj_tables', 'data': subj_tables_filter_programme, 'data_all': subjects_tables, 'header': subjects_tables[0]['subjects_header'] if len(subjects_tables) > 0 else []})
@@ -426,12 +426,17 @@ def filter_sort_results(root_dir):
         results = results_save_read.load_results(root_dir=root_dir, abs_path=results_path)
 
     studies_programme = results['studies_programme']
+    studies_type = results['studies_type'] if 'studies_type' in results.keys() else ''
     prof_to_subj = results['prof_to_subj_not_found']
     subj_to_prof = results['subj_to_prof_not_found']
 
-    # Filter professors to subjects comparison to find unmatched items for specific studies programme only
+    # Filter professors to subjects comparison to find unmatched items for specific studies programme and studies type only
     prof_to_subj_filt_not_found = [i for i in prof_to_subj if i['potential_matches'] == []]
-    prof_to_subj_filt_not_found = [i for i in prof_to_subj_filt_not_found if i['studies_programme'].lower() == studies_programme.lower() or re.search(re.escape(studies_programme), i['studies_programme'], re.I) or re.search(re.escape(i['studies_programme']), studies_programme, re.I)]
+    prof_to_subj_filt_not_found = [i for i in prof_to_subj_filt_not_found if i['studies_programme'].lower() == studies_programme.lower() or\
+        re.search(re.escape(studies_programme), i['studies_programme'], re.I) or\
+            re.search(re.escape(i['studies_programme']), studies_programme, re.I)]
+    if studies_type != '':
+        prof_to_subj_filt_not_found = [i for i in prof_to_subj_filt_not_found if ('studies_type' in i.keys() and i['studies_type'].lower == studies_type.lower()) or ('studies_type' not in i.keys() and re.search(re.escape(studies_type), i['studies_programme'], re.I))]
     print(f"Professors to subjects not found: {json.dumps(prof_to_subj_filt_not_found, indent=4)}")
 
     # Filter professors to subjects comparison results to find items with mismatched professor name
@@ -469,9 +474,13 @@ def filter_sort_results(root_dir):
     prof_to_subj_filt_pot_matches_subj_name = [i for i in prof_to_subj_filt_pot_matches_subj_name if i['potential_matches'] != []]
     print(f"Professors to subjects comparison results with mismatched subject name: {json.dumps(prof_to_subj_filt_pot_matches_subj_name, indent=4)}")
 
-    # Filter subjects to professors comparison to find unmatched items for specific studies programme only
+    # Filter subjects to professors comparison to find unmatched items for specific studies programme and studies type only
     subj_to_prof_filt_not_found = [i for i in subj_to_prof if i['potential_matches'] == []]
-    subj_to_prof_filt_not_found = [i for i in subj_to_prof_filt_not_found if i['studies_programme'].lower() == studies_programme.lower() or re.search(re.escape(studies_programme), i['studies_programme'], re.I) or re.search(re.escape(i['studies_programme']), studies_programme, re.I)]
+    subj_to_prof_filt_not_found = [i for i in subj_to_prof_filt_not_found if i['studies_programme'].lower() == studies_programme.lower() or\
+        re.search(re.escape(studies_programme), i['studies_programme'], re.I) or\
+            re.search(re.escape(i['studies_programme']), studies_programme, re.I)]
+    if studies_type != '':
+        subj_to_prof_filt_not_found = [i for i in subj_to_prof_filt_not_found if ('studies_type' in i.keys() and i['studies_type'].lower == studies_type.lower()) or ('studies_type' not in i.keys() and re.search(re.escape(studies_type), i['studies_programme'], re.I))]
     print(f"Subjects to professors not found: {json.dumps(subj_to_prof_filt_not_found, indent=4)}")
 
     # Filter subjects to professors comparison results to find items with mismatched professor name
