@@ -64,12 +64,13 @@ def find_subjects_file(root_dir, links, search_regex=''):
 
     return subjects_file[0] if len(subjects_file) > 0 else []
 
-def extract_professor_table(prof_table):
+def extract_professor_table(prof_table, index_table):
     """
     Extracts professor table data from the given table.
 
     Args:
         prof_table (array):       Professor table
+        index_table (int):        Index of the table in the list of tables - to be used as a key for the data dictionary
     Returns:
         (dict):                   Professor table data with keys 'name', 'title', 'institution', 'sci_discipline', 'subjects', 'subjects_header'
     """
@@ -118,7 +119,7 @@ def extract_professor_table(prof_table):
         if subject_name != '':
             subjects.append({'index': index_subject, 'code': subject_code, 'name': subject_name, 'type': subject_type, 'studies_programme': subject_programme, 'studies_type': subject_studies_type})
         index_subject_row += 1
-    return {'name': prof_name, 'title': prof_title, 'institution': institution, 'sci_discipline': sci_discipline, 'subjects': subjects, 'subjects_header': subjects_header}
+    return {'table_key': index_table,'name': prof_name, 'title': prof_title, 'institution': institution, 'sci_discipline': sci_discipline, 'subjects': subjects, 'subjects_header': subjects_header}
 
 def extract_subjects_table(subj_table):
     """
@@ -241,7 +242,7 @@ def read_professors(root_dir, professors_file_txt):
             table_data.append({'type': 'prof_list', 'data': table_vals, 'header': header})
             continue
         # Other tables are professor tables
-        professor_table = extract_professor_table(prof_table=table_read)
+        professor_table = extract_professor_table(prof_table=table_read, index_table=indexTable)
         subjects_filter_programme = []
         if data != {} and ('studies_programme' in data.keys() or 'studies_type' in data.keys()):
             studies_programme = data['studies_programme'] if 'studies_programme' in data.keys() else ''

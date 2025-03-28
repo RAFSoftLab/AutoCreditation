@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import re
 import sys
 import os
 import PyQt5.QtCore as QtCore
@@ -26,7 +27,7 @@ class FileExplorer(QMainWindow):
         self.gen_tree = ''
 
         self.setWindowTitle("Dashboard File Explorer")
-        self.setGeometry(200, 100, 900, 600)  # Initial size, but not fixed
+        self.setGeometry(200, 100, 1000, 600)  # Initial size, but not fixed
 
         # Main Layout
         main_widget = QWidget()
@@ -130,10 +131,10 @@ class FileExplorer(QMainWindow):
             self.load_html_content("results/results.html")
             self.stack.setCurrentIndex(0)
         elif text == "- Professors":
-            self.load_html_content("professors_data.html")
+            self.load_html_content("results/professors_data.html")
             self.stack.setCurrentIndex(0)
         elif text == "- Subjects":
-            self.load_html_content("subjects_data.html")
+            self.load_html_content("results/subjects_data.html")
             self.stack.setCurrentIndex(0)
 
     def load_documentation_tree(self):
@@ -160,16 +161,24 @@ class FileExplorer(QMainWindow):
             None
         """
         file_path = os.path.join(self.root_dir if root_dir == '' else root_dir, Path(f"tmp/{filename}"))
-        if os.path.exists(file_path):
-            with open(file_path, "r", encoding="utf-8") as file:
-                html_content = file.read()
-            self.html_viewer.setHtml(html_content)
-        elif filename.endswith('.html') and os.path.exists(os.path.join(self.root_dir if root_dir == '' else root_dir, Path(f"tmp/{filename[:-5]}.json"))):
-            with open(os.path.join(self.root_dir if root_dir == '' else root_dir, Path(f"tmp/{filename[:-5]}.json")), "r", encoding="utf-8") as file:
-                html_content = json.load(file)
-            self.html_viewer.setHtml(f"<pre>{json.dumps(html_content, indent=4, ensure_ascii=False)}</pre>")
-        else:
-            self.html_viewer.setHtml(f"<h2>No data found</h2><p>{filename} is missing.</p>")
+        try:
+            if os.path.exists(file_path):
+                with open(file_path, "r", encoding="utf-8") as file:
+                    html_content = file.read()
+                self.html_viewer.setHtml(html_content)
+            elif filename.endswith('.html') and os.path.exists(os.path.join(self.root_dir if root_dir == '' else root_dir, Path(f"tmp/{filename[:-5]}.json"))):
+                with open(os.path.join(self.root_dir if root_dir == '' else root_dir, Path(f"tmp/{filename[:-5]}.json")), "r", encoding="utf-8") as file:
+                    html_content = json.load(file)
+                self.html_viewer.setHtml(f"<pre>{json.dumps(html_content, indent=4, ensure_ascii=False)}</pre>")
+            elif filename.endswith('.html') and os.path.exists(os.path.join(self.root_dir if root_dir == '' else root_dir, Path(f"tmp/{filename.split(os.sep if re.search(re.escape(os.sep), filename) else '/')[-1][:-5]}.json"))):
+                with open(os.path.join(self.root_dir if root_dir == '' else root_dir, Path(f"tmp/{filename.split(os.sep if re.search(re.escape(os.sep), filename) else '/')[-1][:-5]}.json")), "r", encoding="utf-8") as file:
+                    html_content = json.load(file)
+                # TODO: Subject field in professors data click opens subjects table in new window
+            else:
+                self.html_viewer.setHtml(f"<h2>No data found</h2><p>{filename} is missing.</p>")
+        except Exception as e:
+            print(f'Error loading file:\n    {e}')
+            self.html_viewer.setHtml(f"<h2>Error loading file</h2><p>{filename} is missing.</p>")
 
     def navigate_to_input_path(self):
         """
