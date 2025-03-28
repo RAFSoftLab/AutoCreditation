@@ -12,7 +12,9 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QPixmap, QFont
 import PyQt5.QtGui as QtGui
-from PyQt5.QtWidgets import QApplication, QMainWindow, QSystemTrayIcon, QPushButton, QDesktopWidget, QLineEdit, QTextEdit, QWidget, QLabel, QCheckBox, QGridLayout, QVBoxLayout, QProgressBar
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QSystemTrayIcon, QPushButton, QDesktopWidget,
+                             QLineEdit, QTextEdit, QWidget, QLabel, QCheckBox, QGridLayout, QVBoxLayout,
+                             QProgressBar, QStackedWidget, QFrame)
 # TODO Remove after debugging:
 # import debugpy
 from pyqtspinner.spinner import WaitingSpinner
@@ -21,6 +23,7 @@ import src.util as util
 
 import src.gui.main_worker as main_worker
 import src.gui.gui_explorer as gui_explorer
+import src.gui.gui_support as gui_support
 
 dirName = os.path.dirname(__file__)
 
@@ -100,7 +103,7 @@ class MainWindow(QMainWindow):
         # self.choose_doc_dir_button.setFixedWidth(150)
         self.choose_doc_dir_button.setMinimumWidth(150)
         self.choose_doc_dir_button.clicked.connect(self.choose_doc_dir)
-        self.control_panel.addWidget(self.choose_doc_dir_button, 1, 3)
+        self.control_panel.addWidget(self.choose_doc_dir_button, 1, 3, 1, 1)
 
         # Run button
         self.run_button = QPushButton(self)
@@ -110,16 +113,16 @@ class MainWindow(QMainWindow):
         self.run_button.setMinimumWidth(150)
         self.set_run_button_enabled(False)
         self.run_button.clicked.connect(self.run)
-        self.control_panel.addWidget(self.run_button, 2, 3)
+        self.control_panel.addWidget(self.run_button, 2, 3, 1, 1)
 
         # Results button
         self.results_button = QPushButton(self)
         self.results_button.setText("Results")
-        self.results_button.move(660, 90)
+        # self.results_button.move(660, 90)
         self.results_button.setMinimumWidth(150)
         self.results_button.setEnabled(self.finished)
         self.results_button.clicked.connect(self.open_explorer)
-        self.control_panel.addWidget(self.results_button, 2, 4)
+        self.control_panel.addWidget(self.results_button, 2, 4, 1, 2)
 
         # Valid directory check label
         self.valid_doc_dir_label = QLabel(self)
@@ -129,15 +132,23 @@ class MainWindow(QMainWindow):
         self.control_panel.addWidget(self.valid_doc_dir_label, 2, 0, 1, 3, alignment=Qt.AlignmentFlag.AlignTop)
 
         # Clean /tmp directory
-        self.clean_tmp_checkbox = QCheckBox(self)
-        self.clean_tmp_checkbox.setText("Clean /tmp directory")
-        self.clean_tmp_checkbox.adjustSize()
-        self.clean_tmp_checkbox.setToolTip("Clean the /tmp directory before running the application.")
-        self.clean_tmp_checkbox.move(660, 30)
-        self.clean_tmp_checkbox.setFixedHeight(self.choose_doc_dir_button.height())
-        self.clean_tmp_checkbox.setChecked(True)
-        self.clean_tmp_checkbox.clicked.connect(self.update_clean_tmp)
-        self.control_panel.addWidget(self.clean_tmp_checkbox, 1, 4, 1, 2)
+        # self.clean_tmp_checkbox = QCheckBox(self)
+        # self.clean_tmp_checkbox.setText("Clean /tmp directory")
+        # self.clean_tmp_checkbox.adjustSize()
+        # self.clean_tmp_checkbox.setToolTip("Clean the /tmp directory before running the application.")
+        # self.clean_tmp_checkbox.move(660, 30)
+        # self.clean_tmp_checkbox.setFixedHeight(self.choose_doc_dir_button.height())
+        # self.clean_tmp_checkbox.setChecked(True)
+        # self.clean_tmp_checkbox.clicked.connect(self.update_clean_tmp)
+        # self.control_panel.addWidget(self.clean_tmp_checkbox, 1, 4, 1, 2)
+
+        # Options button
+        self.options_button = QPushButton(self)
+        self.options_button.setText("Options")
+        self.options_button.setToolTip("Options for the application.")
+        self.options_button.setMinimumWidth(150)
+        self.options_button.clicked.connect(self.toggle_options_click)
+        self.control_panel.addWidget(self.options_button, 1, 4, 1, 2)
 
         # Results and output text area
         self.results_text_area = QTextEdit(self)
@@ -147,7 +158,27 @@ class MainWindow(QMainWindow):
         self.results_text_area.setMinimumHeight(self.results_text_area.fontMetrics().height() * 30)
         self.results_text_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.results_text_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self.output_panel.addWidget(self.results_text_area, 0, 0)
+        # self.output_panel.addWidget(self.results_text_area, 0, 0)
+
+        # Options panel
+        self.options_panel_layout = QGridLayout()
+        self.options_label = QLabel("<h2>Options</h2>")
+        self.options_panel_layout.addWidget(self.options_label, 0, 0, 2, 10, alignment=Qt.AlignmentFlag.AlignTop)
+        self.options_panel_layout.addWidget(QPushButton("Load Results", clicked=self.load_results), 2, 4, 1, 2)
+        self.clean_tmp_checkbox = QCheckBox('Clean /tmp directory', checked=True, clicked=self.update_clean_tmp)
+        self.options_panel_layout.addWidget(self.clean_tmp_checkbox,3, 4, 3, 2, alignment=Qt.AlignmentFlag.AlignTop)
+        self.options_panel = QFrame()
+        # self.options_panel.setStyleSheet("border: 2px solid black;")
+        self.options_panel.setFrameStyle(QFrame.StyledPanel | QFrame.Plain)
+        self.options_panel.setLineWidth(1)
+        self.options_panel.setLayout(self.options_panel_layout)
+
+
+        self.stack = QStackedWidget()
+        self.stack.addWidget(self.results_text_area)
+        self.stack.addWidget(self.options_panel)
+        self.stack.setCurrentIndex(0)
+        self.output_panel.addWidget(self.stack)
 
         # Running spinner
         self.running_spinner = WaitingSpinner(self.results_text_area, True, True, Qt.ApplicationModal)
@@ -236,6 +267,52 @@ class MainWindow(QMainWindow):
             self.set_run_button_enabled(False)
         self.valid_doc_dir_label.adjustSize()
 
+    def toggle_options(self, set_view='-1'):
+        """
+        Switch to options panel
+        """
+        view_map = {
+            'progress' : 0,
+            '0': 0,
+            'options': 1,
+            '1': 1,
+            '-1': (1 - self.stack.currentIndex())
+        }
+        button_text_map = {
+            '0': 'Options',
+            '1': 'Show Progress'
+        }
+
+        self.stack.setCurrentIndex(view_map[set_view])
+        self.options_button.setText(button_text_map[str(view_map[set_view])])
+
+        # if self.stack.currentIndex() == 0:
+        #     self.stack.setCurrentIndex(1)
+        #     self.options_button.setText("Show Progress")
+        # else:
+        #     self.stack.setCurrentIndex(0)
+        #     self.options_button.setText("Options")
+
+    def toggle_options_click(self):
+        """
+        Switch between options panel and progress panel on button click
+        """
+        self.toggle_options()
+
+    def load_results(self):
+        """
+        Load results from previous run if available, display popup if not
+        """
+        # TODO: implement
+        results_json_path = os.path.join(self.root_dir, Path('tmp/results/results.json'))
+        prof_json_path = os.path.join(self.root_dir, Path('tmp/professors_data.json'))
+        subj_json_path = os.path.join(self.root_dir, Path('tmp/subjects_data.json'))
+        if False in [True if os.path.exists(curr_path) else False for curr_path in [results_json_path, prof_json_path, subj_json_path]]:
+            popup_message = gui_support.PopupDialog("No results data found. Please run the application first.", self)
+            return
+        self.generate_results_html_open_explorer()
+
+
     def set_run_button_enabled(self, enabled):
         """
         Enable or disable the run button.
@@ -258,6 +335,7 @@ class MainWindow(QMainWindow):
         Returns:
             None.
         """
+        self.toggle_options(set_view='progress')
         self.progress_bar.setVisible(visible)
         self.progress_desc_label.setVisible(visible)
 
@@ -346,7 +424,7 @@ class MainWindow(QMainWindow):
         self.doc_dir_text_line.setEnabled(not lock)
         self.choose_doc_dir_button.setEnabled(not lock)
         self.run_button.setEnabled(not lock)
-        self.clean_tmp_checkbox.setEnabled(not lock)
+        self.options_button.setEnabled(not lock)
         if lock == True:
             self.run_button.setText("Running...")
         else:
@@ -363,6 +441,28 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print(f'Error generating HTML files:\n    {e}')
 
+    def generate_prof_html(self, root_dir=''):
+        """
+        Generates professors data HTML file.
+        """
+        root_dir = root_dir if root_dir != '' else self.root_dir
+        print("Generating professors data HTML file...")
+        try:
+            util.generate_prof_html(root_dir=root_dir)
+        except Exception as e:
+            print(f'Error generating professors data HTML file:\n    {e}')
+
+    def generate_subjects_html(self, root_dir=''):
+        """
+        Generates subjects data HTML file.
+        """
+        root_dir = root_dir if root_dir != '' else self.root_dir
+        print("Generating subjects data HTML file...")
+        try:
+            util.generate_subjects_html(root_dir=root_dir)
+        except Exception as e:
+            print(f'Error generating subjects data HTML file:\n    {e}')
+
     def open_explorer(self):
         """
         """
@@ -370,6 +470,17 @@ class MainWindow(QMainWindow):
         self.explorer.setWindowModality(Qt.ApplicationModal)
         self.explorer.show()
 
+    def generate_results_html_open_explorer(self):
+        """
+        Generates results HTML file and opens explorer
+        """
+        self.generate_html()
+        self.generate_prof_html()
+        self.generate_subjects_html()
+        self.open_explorer()
+
+
+    @QtCore.pyqtSlot(dict)
     def finished_run(self):
         """
         Called when the run is finished.
@@ -377,10 +488,16 @@ class MainWindow(QMainWindow):
         self.lock_gui(lock=False)
         self.running_spinner.stop()
         self.finished = True
+        self.choose_doc_dir_button.setEnabled(True)
+        self.set_run_button_enabled(True)
+        self.options_button.setEnabled(True)
         self.results_button.setEnabled(True)
         self.scroll_to_bottom()
-        self.generate_html()
-        self.open_explorer()
+        # self.generate_html()
+        # self.generate_prof_html()
+        # self.open_explorer()
+        self.generate_results_html_open_explorer()
+
 
     def run(self):
         """

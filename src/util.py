@@ -656,3 +656,102 @@ def generate_res_html(root_dir=''):
         with open(os.path.join(root_dir, Path('tmp/results/results.html')), 'w', encoding='utf-8') as f:
             f.write(results_html)
     print("HTML files generated.")
+
+def generate_prof_html(root_dir=''):
+    """
+    Generates HTML file for professors data.
+
+    Args:
+        root_dir (str):          Root directory of the project, absolute path
+
+    Returns:
+        None
+    """
+    print("Generating professors HTML file...")
+    if os.path.exists(os.path.join(root_dir, Path('tmp/professors_data.json'))):
+        prof_data = util.load_data(root_dir=root_dir, abs_path=os.path.join(root_dir, Path('tmp/professors_data.json')))
+        prof_data_html = ''
+        for prof_data_item in prof_data:
+            if 'type' in prof_data_item.keys() and prof_data_item['type'] == 'prof_list':
+                prof_data_html += f'<h2>List of professors</h2>\n'
+                prof_list_table = ''
+                if 'data' not in prof_data_item.keys():
+                    prof_data_html += f'<p>No professors list found.</p>\n'
+                else:
+                    prof_list_table += f'{8 * " "}<tr>\n{12 * " "}<th>Num</th><th>Professor</th><th>Title<\th>\n</tr>\n'
+                    for prof_item in prof_data_item['data']:
+                        prof_list_table += f'{8 * " "}<tr>\n{12 * " "}<td>{prof_item["ord_num"] if "ord_num" in prof_item.keys() else ""}</td>\n<td>{prof_item["prof_name"] if "prof_name" in prof_item.keys() else ""}</td>\n<td>{prof_item["prof_title"] if "prof_title" in prof_item.keys() else ""}</td>\n</tr>\n'
+                    prof_data_html += f'<table>\n{4 * " "}{prof_list_table}\n</table>\n'
+            if 'type' in prof_data_item.keys() and prof_data_item['type'] == 'prof_tables':
+                prof_data_html += f'<h2>Professor details table</h2>\n'
+
+                if 'data' not in prof_data_item.keys():
+                    prof_data_html += f'<p>No professors tables found.</p>\n'
+                else:
+                    prof_data_tables = f'{8 * " "}<tr>\n{12 * " "}<th>Professor</th><th>Title</th><th>Institution</th><th>Sci. discipline</th><th>Subjects</th>\n</tr>\n'
+                    for prof_item in prof_data_item['data']:
+                        prof_data_tables += f'{8 * " "}<tr>\n{12 * " "}<td>{prof_item["name"] if "name" in prof_item.keys() else ""}</td><td>{prof_item["title"] if "title" in prof_item.keys() else ""}</td><td>{prof_item["institution"] if "institution" in prof_item.keys() else ""}</td><td>{prof_item["sci_discipline"] if "sci_discipline" in prof_item.keys() else ""}</td><td><a href="{prof_item["table_key"] if "table_key" in prof_item.keys() else ""}">Subjects</a></td>\n</tr>\n'.format(prof_item['subjects_html_path'] if 'subjects_html_path' in prof_item.keys() else '')
+                    prof_data_html += f'<table>\n{4 * " "}{prof_data_tables}\n</table>\n'
+        prof_data_html = f'<html>\n<head>\n<style>\ntable {{\n    border: 1px solid black;\n    border-collapse: collapse;\n}}\nth, td {{\n    border: 1px solid black;\n    padding: 5px;\n    margin: 0px auto;\n    border-collapse: collapse;\n}}\n</style>\n</head>\n<body>\n{prof_data_html}\n</body>\n</html>'
+        with open(os.path.join(root_dir, Path('tmp/results/professors_data.html')), mode='w', encoding='utf-8') as f:
+            f.write(prof_data_html)
+    print("Professors HTML file generated.")
+
+def generate_subjects_html(root_dir=''):
+    """
+    Generates HTML file for subjects data.
+
+    Args:
+        root_dir (str):          Root directory of the project, absolute path
+
+    Returns:
+        None
+    """
+    print("Generating subjects HTML file...")
+    if os.path.exists(os.path.join(root_dir, Path('tmp/subjects_data.json'))):
+        subj_data = util.load_data(root_dir=root_dir, abs_path=os.path.join(root_dir, Path('tmp/subjects_data.json')))
+        subj_data_html = ''
+        for subj_data_item in subj_data:
+            if 'type' in subj_data_item.keys() and subj_data_item['type'] == 'subj_list':
+                subj_data_html += f'<h2>List of subjects</h2>\n'
+                subj_list_table = ''
+                if 'data' not in subj_data_item.keys():
+                    subj_data_html += f'<p>No subjects list found.</p>\n'
+                else:
+                    subj_list_table += f'{8 * " "}<tr>\n{12 * " "}<th>Index</th><th>Subject Code</th><th>Subject Name<\th><th>Subject Type<\th><th>Sem<\th><th>P<\th><th>V<\th><th>Don<\th><th>Other<\th><th>ESPB<\th>\n</tr>\n'
+                    for subj_item in subj_data_item['data']:
+                        subj_list_table += f'{8 * " "}<tr>\n{12 * " "}<td>{subj_item["index"] if "index" in subj_item.keys() else""}</td>\n\
+                                                                        <td>{subj_item["code"] if "code" in subj_item.keys() else ""}</td>\n\
+                                                                            <td>{subj_item["name"] if "name" in subj_item.keys() else ""}</td>\n\
+                                                                                <td>{subj_item["type"] if "type" in subj_item.keys() else ""}</td>\n\
+                                                                                    <td>{subj_item["sem"] if "sem" in subj_item.keys() else ""}</td>\n\
+                                                                                        <td>{subj_item["p"] if "p" in subj_item.keys() else ""}</td>\n\
+                                                                                            <td>{subj_item["v"] if "v" in subj_item.keys() else ""}</td>\n\
+                                                                                                <td>{subj_item["don"] if "don" in subj_item.keys() else ""}</td>\n\
+                                                                                                    <td>{subj_item["other"] if "other" in subj_item.keys() else ""}</td>\n\
+                                                                                                        <td>{subj_item["espb"] if "espb" in subj_item.keys() else ""}</td>\n</tr>\n'
+                    subj_data_html += f'<table>\n{4 * " "}{subj_list_table}\n</table>\n'
+            if 'type' in subj_data_item.keys() and subj_data_item['type'] == 'subj_tables':
+                subj_data_html += f'<h2>Subject details table</h2>\n'
+
+                if 'data' not in subj_data_item.keys():
+                    subj_data_html += f'<p>No subjects tables found.</p>\n'
+                else:
+                    subj_data_tables = f'{8 * " "}<tr>\n{12 * " "}<th>School</th><th>Studies Programme</th><th>Full Name</th><th>Subject Code</th><th>Subject Name</th><th>Professor</th><th>Subject Status</th><th>ESPB</th><th>Condition</th><th>Theory Classes</th><th>Practical Classes</th>\n</tr>\n'
+                    for subj_item in subj_data_item['data']:
+                        subj_data_tables += f'{8 * " "}<tr>\n{12 * " "}<td>{subj_item["school"] if "school" in subj_item.keys() else ""}</td>\
+                                                                        <td>{subj_item["studies_programme"] if "studies_programme" in subj_item.keys() else ""}</td>\
+                                                                            <td>{subj_item["subject"] if "subject" in subj_item.keys() else ""}</td>\
+                                                                                <td>{subj_item["subject_code"] if "subject_code" in subj_item.keys() else ""}</td>\
+                                                                                    <td>{subj_item["subject_name"] if "subject_name" in subj_item.keys() else ""}</td>\
+                                                                                        <td>{subj_item["professor"] if "professor" in subj_item.keys() else ""}</td>\
+                                                                                            <td>{subj_item["subject_status"] if "subject_status" in subj_item.keys() else ""}</td>\
+                                                                                                <td>{subj_item["espb"] if "espb" in subj_item.keys() else ""}</td>\
+                                                                                                    <td>{subj_item["condition"] if "condition" in subj_item.keys() else ""}</td>\
+                                                                                                        <td>{subj_item["theory_classes"] if "theory_classes" in subj_item.keys() else ""}</td>\
+                                                                                                            <td>{subj_item["practical_classes"] if "practical_classes" in subj_item.keys() else ""}</td>\n</tr>\n</tr>\n'
+                    subj_data_html += f'<table>\n{4 * " "}{subj_data_tables}\n</table>\n'
+        subj_data_html = f'<html>\n<head>\n<style>\ntable {{\n    border: 1px solid black;\n    border-collapse: collapse;\n}}\nth, td {{\n    border: 1px solid black;\n    padding: 5px;\n    margin: 0px auto;\n    border-collapse: collapse;\n}}\n</style>\n</head>\n<body>\n{subj_data_html}\n</body>\n</html>'
+        with open(os.path.join(root_dir, Path('tmp/results/subjects_data.html')), mode='w', encoding='utf-8') as f:
+            f.write(subj_data_html)
+
