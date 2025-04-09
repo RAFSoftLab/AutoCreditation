@@ -1,6 +1,7 @@
-
-
-
+"""
+Main worker thread for the application.
+Documentation copying, directory reading, file conversion and reading, hyperlinks verification, professors and subjects data comparison and filtering.
+"""
 
 import os
 from pathlib import Path
@@ -116,7 +117,6 @@ class Worker(QObject):
         print(f"Unmatched hyperlinks: \n{json.dumps(unmatched_hyperlinks, indent=4)}")
         self.updated_results.emit({'Unmatched hyperlinks': unmatched_hyperlinks if len(unmatched_hyperlinks) > 0 else 'All hyperlinks verified'})
 
-        # TODO: file verification (file content)
         # File verification 1: "Knjiga nastavnika"
         self.progress_bar_value.emit(40, 'Finding professors file...')
         professors_file = verify_data.find_professors_file(root_dir=self.root_dir, links=found_hyperlinks)
@@ -137,8 +137,6 @@ class Worker(QObject):
                 print(f'Professors file link verified - file found: {professors_file["path"]}')
                 # Read professors file
                 professors_file_path = professors_file['path']
-                # TODO: remove platform check
-                # TODO: move to separate function?
                 if professors_file['path'].endswith('.doc') and sys.platform.startswith('win') or sys.platform.startswith('linux'):
                     self.progress_bar_value.emit(50, 'Converting professors file to .docx...')
                     file_name = professors_file['path'].split(os.sep)[-1]
@@ -236,16 +234,6 @@ class Worker(QObject):
             compare_results_filter = verify_data.filter_sort_results(root_dir=self.root_dir)
             self.updated_results.emit({'Filtered comparison results': compare_results_filter})
 
-
-            # TODO: add to gui results, to gui errors.
-
-
-
-
-
-
-
         print("Script finished.")
-        # TODO: Delete copied files after finish.
         self.progress_bar_visibility.emit(False)
         self.finished.emit(self.resultData)

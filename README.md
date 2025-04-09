@@ -195,7 +195,7 @@ Automated reading and checkup of university acreditation documentation files.
           - If professor is not found, item is added to the list of unmatched items
           - If professor is found, but professor name is not matching, item is added to the list of potential matches, marked as "prof_name_mismatch"
           - If professor is found, but subject name is not matching, item is added to the list of potential matches, marked as "subj_name_mismatch"
-   - 0.0.10 - Filtering and sorting comparison results
+  - 0.0.10 - Filtering and sorting comparison results
      - Professors to subjects comparison results filtering
        - Finding items with no matching subject
        - Finding items where professor name is not matching
@@ -204,3 +204,9 @@ Automated reading and checkup of university acreditation documentation files.
        - Finding items with no matching professor
        - Finding items where professor name is not matching
        - Finding items where subject name is not matching
+  - 0.1.0 - Results and tables display
+    - Options panel of the main window, results and data in explorer window
+    - Results HTML generation, as well as tables for professors and subjects
+    - All subjects of a professor preview window
+    - Data/.JSON saving and loading
+    - Loading previous results and data, saving current results and data

@@ -26,20 +26,16 @@ def find_professors_file(root_dir, links, search_regex=''):
         (dict):                  Professors file
     """
     professors_file = []
-
     search_regex = r'Knjiga\snastavnika' if search_regex == '' else search_regex
-
     for link in links:
         if re.search(r'Knjiga\snastavnika', f'{link['name']} {link["desc"]} {link["line"]}'):
             professors_file.append(link)
-
     if len(professors_file) > 1:
         print('Multiple professors files found')
         for prof_file in professors_file:
             if re.search(search_regex, prof_file['path']):
                 print(f'Professors file found: {prof_file["path"]}')
                 return prof_file
-
     return professors_file[0] if len(professors_file) > 0 else []
 
 def find_subjects_file(root_dir, links, search_regex=''):
@@ -74,7 +70,6 @@ def extract_professor_table(prof_table, index_table):
     Returns:
         (dict):                   Professor table data with keys 'name', 'title', 'institution', 'sci_discipline', 'subjects', 'subjects_header'
     """
-
     prof_name, prof_title, institution, sci_discipline = '', '', '', ''
     subjects, subjects_header = [], []
     in_subjects, index_subject_row = False, 0
@@ -211,17 +206,14 @@ def read_professors(root_dir, professors_file_txt):
     Returns:
         (list):                      List of tables (each table represented by a dictionary)
     """
-
     # Load extracted data
     data = {}
     if os.path.exists(os.path.join(root_dir, Path('tmp/results/results.json'))):
         data = results_save_read.load_results(root_dir=root_dir)
-
     tables_in_file = re.findall(r'\<table\>.*?\<\/table\>', professors_file_txt)
     read_tables = []
     prof_tables = []
     table_data = []
-
     for indexTable, table in enumerate(tables_in_file):
         table_read = pd.read_html(table)[0]
         # table_read.to_csv(os.path.join(root_dir, Path('tmp/converted_documents_md_html/curr_table.txt', sep='\t', index=False)))
@@ -273,17 +265,14 @@ def read_subjects(root_dir, subjects_file_txt):
     Returns:
         (list):                      List of tables (each table represented by a dictionary)
     """
-
     # Load extracted data
     data = {}
     if os.path.exists(os.path.join(root_dir, Path('tmp/results/results.json'))):
         data = results_save_read.load_results(root_dir=root_dir)
-
     tables_in_file = re.findall(r'\<table\>.*?\<\/table\>', subjects_file_txt)
     read_tables = []
     subjects_tables = []
     table_data = []
-
     for indexTable, table in enumerate(tables_in_file):
         table_read = pd.read_html(table)[0]
         # table_read.to_csv(os.path.join(root_dir, Path('tmp/converted_documents_md_html/curr_table.txt', sep='\t', index=False)))
@@ -344,21 +333,17 @@ def compare_prof_and_subj_data(root_dir, prof_data='', subj_data='', prof_data_s
     Returns:
         (dict):                       Comparison results
     """
-
     professors_to_subjects_not_found = []
     subjects_to_professors_not_found = []
-
     # Load data if path is passed
     if prof_data == '' and prof_data_save_path != '' and os.path.exists(prof_data_save_path):
         prof_data = util.load_data(root_dir=root_dir, abs_path=prof_data_save_path, data_name='professors_data')
     if subj_data == '' and subj_data_save_path != '' and os.path.exists(subj_data_save_path):
         subj_data = util.load_data(root_dir=root_dir, abs_path=subj_data_save_path, data_name='subjects_data')
-
     prof_tables = [i['data'] for i in prof_data if i['type'] == 'prof_tables']
     prof_tables = prof_tables[0] if len(prof_tables) > 0 else []
     subj_tables = [i['data'] for i in subj_data if i['type'] == 'subj_tables']
     subj_tables = subj_tables[0] if len(subj_tables) > 0 else []
-
     # Compare professors to subjects
     for indexProf, prof in enumerate(prof_tables):
         print(f"{'-' * 20}\n{indexProf + 1}/{len(prof_tables)}    Finding subjects for professor {prof['name']}...\n")
@@ -420,17 +405,13 @@ def filter_sort_results(root_dir):
     Returns:
         (dict):                  Sorted results dictionary, with items
     """
-
     results_path = os.path.join(root_dir, Path('tmp/results/results.json'))
-
     if os.path.exists(results_path) and os.path.isfile(results_path):
         results = results_save_read.load_results(root_dir=root_dir, abs_path=results_path)
-
     studies_programme = results['studies_programme']
     studies_type = results['studies_type'] if 'studies_type' in results.keys() else ''
     prof_to_subj = results['prof_to_subj_not_found']
     subj_to_prof = results['subj_to_prof_not_found']
-
     # Filter professors to subjects comparison to find unmatched items for specific studies programme and studies type only
     prof_to_subj_filt_not_found = [i for i in prof_to_subj if i['potential_matches'] == []]
     prof_to_subj_filt_not_found = [i for i in prof_to_subj_filt_not_found if i['studies_programme'].lower() == studies_programme.lower() or\
@@ -439,7 +420,6 @@ def filter_sort_results(root_dir):
     if studies_type != '':
         prof_to_subj_filt_not_found = [i for i in prof_to_subj_filt_not_found if ('studies_type' in i.keys() and i['studies_type'].lower == studies_type.lower()) or ('studies_type' not in i.keys() and re.search(re.escape(studies_type), i['studies_programme'], re.I))]
     print(f"Professors to subjects not found: {json.dumps(prof_to_subj_filt_not_found, indent=4)}")
-
     # Filter professors to subjects comparison results to find items with mismatched professor name
     prof_to_subj_filt_pot_matches_prof_name = [i for i in prof_to_subj if i['potential_matches'] != []]
     prof_to_subj_filt_pot_matches_prof_name = [i for i in prof_to_subj_filt_pot_matches_prof_name if True in [True if j['type'] == 'prof_name_mismatch' else False for j in i['potential_matches']]]
@@ -447,7 +427,6 @@ def filter_sort_results(root_dir):
         prof_to_subj_filt_pot_matches_prof_name[indexI]['potential_matches'] = [j for j in prof_to_subj_filt_pot_matches_prof_name[indexI]['potential_matches'] if j['type'] == 'prof_name_mismatch']
     prof_to_subj_filt_pot_matches_prof_name = [i for i in prof_to_subj_filt_pot_matches_prof_name if i['potential_matches'] != []]
     print(f"Professors to subjects comparison results with mismatched professor name: {json.dumps(prof_to_subj_filt_pot_matches_prof_name, indent=4)}")
-
     # Filter professors to subjects comparison results to find items with mismatched professor name, excluding middle name
     prof_to_subj_filt_pot_matches_prof_name_middle = []
     for indexI, item in enumerate(prof_to_subj_filt_pot_matches_prof_name):
@@ -466,7 +445,6 @@ def filter_sort_results(root_dir):
             item['potential_matches'] = potential_matches
             prof_to_subj_filt_pot_matches_prof_name_middle.append(item)
     print(f"Professors to subjects comparison results with mismatched professor name, excluding middle name: {json.dumps(prof_to_subj_filt_pot_matches_prof_name_middle, indent=4)}")
-
     # Filter professors to subjects comparison results to find items with mismatched subject name
     prof_to_subj_filt_pot_matches_subj_name = [i for i in prof_to_subj if i['potential_matches'] != []]
     prof_to_subj_filt_pot_matches_subj_name = [i for i in prof_to_subj_filt_pot_matches_subj_name if True in [True if j['type'] == 'subj_name_mismatch' else False for j in i['potential_matches']]]
@@ -474,7 +452,6 @@ def filter_sort_results(root_dir):
         prof_to_subj_filt_pot_matches_subj_name[indexI]['potential_matches'] = [j for j in prof_to_subj_filt_pot_matches_subj_name[indexI]['potential_matches'] if j['type'] == 'subj_name_mismatch']
     prof_to_subj_filt_pot_matches_subj_name = [i for i in prof_to_subj_filt_pot_matches_subj_name if i['potential_matches'] != []]
     print(f"Professors to subjects comparison results with mismatched subject name: {json.dumps(prof_to_subj_filt_pot_matches_subj_name, indent=4)}")
-
     # Filter subjects to professors comparison to find unmatched items for specific studies programme and studies type only
     subj_to_prof_filt_not_found = [i for i in subj_to_prof if i['potential_matches'] == []]
     subj_to_prof_filt_not_found = [i for i in subj_to_prof_filt_not_found if i['studies_programme'].lower() == studies_programme.lower() or\
@@ -483,7 +460,6 @@ def filter_sort_results(root_dir):
     if studies_type != '':
         subj_to_prof_filt_not_found = [i for i in subj_to_prof_filt_not_found if ('studies_type' in i.keys() and i['studies_type'].lower == studies_type.lower()) or ('studies_type' not in i.keys() and re.search(re.escape(studies_type), i['studies_programme'], re.I))]
     print(f"Subjects to professors not found: {json.dumps(subj_to_prof_filt_not_found, indent=4)}")
-
     # Filter subjects to professors comparison results to find items with mismatched professor name
     subj_to_prof_filt_pot_matches_prof_name = [i for i in subj_to_prof if i['potential_matches'] != []]
     subj_to_prof_filt_pot_matches_prof_name = [i for i in subj_to_prof_filt_pot_matches_prof_name if True in [True if j['type'] == 'prof_name_mismatch' else False for j in i['potential_matches']]]
@@ -491,7 +467,6 @@ def filter_sort_results(root_dir):
         subj_to_prof_filt_pot_matches_prof_name[indexI]['potential_matches'] = [j for j in subj_to_prof_filt_pot_matches_prof_name[indexI]['potential_matches'] if j['type'] == 'prof_name_mismatch']
     subj_to_prof_filt_pot_matches_prof_name = [i for i in subj_to_prof_filt_pot_matches_prof_name if i['potential_matches'] != []]
     print(f"Subjects to professors comparison results with mismatched professor name: {json.dumps(subj_to_prof_filt_pot_matches_prof_name, indent=4)}")
-
     # Filter subjects to professors comparison results to find items with mismatched subject name, excluding middle name
     subj_to_prof_filt_pot_matches_prof_name_middle = []
     for indexI, item in enumerate(subj_to_prof_filt_pot_matches_prof_name):
@@ -510,7 +485,6 @@ def filter_sort_results(root_dir):
             item['potential_matches'] = potential_matches
             subj_to_prof_filt_pot_matches_prof_name_middle.append(item)
     print(f"Subjects to professors comparison results with mismatched subject name, excluding middle name: {json.dumps(subj_to_prof_filt_pot_matches_prof_name_middle, indent=4)}")
-
     # Filter subjects to professors comparison results to find items with mismatched subject name
     subj_to_prof_filt_pot_matches_subj_name = [i for i in subj_to_prof if i['potential_matches'] != []]
     subj_to_prof_filt_pot_matches_subj_name = [i for i in subj_to_prof_filt_pot_matches_subj_name if True in [True if j['type'] == 'subj_name_mismatch' else False for j in i['potential_matches']]]
@@ -518,8 +492,6 @@ def filter_sort_results(root_dir):
         subj_to_prof_filt_pot_matches_subj_name[indexI]['potential_matches'] = [j for j in subj_to_prof_filt_pot_matches_subj_name[indexI]['potential_matches'] if j['type'] == 'subj_name_mismatch']
     subj_to_prof_filt_pot_matches_subj_name = [i for i in subj_to_prof_filt_pot_matches_subj_name if i['potential_matches'] != []]
     print(f"Subjects to professors comparison results with mismatched subject name: {json.dumps(subj_to_prof_filt_pot_matches_subj_name, indent=4)}")
-
-
     results = {
         'studies_programme': studies_programme,
         'prof_to_subj_filt_not_found': prof_to_subj_filt_not_found,

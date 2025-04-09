@@ -19,12 +19,9 @@ def save_results(root_dir, results):
     Returns:
         None
     """
-
     save_dir = os.path.join(root_dir, Path('tmp/results'))
-
     old_results = {}
     new_results = {}
-
     print(f'Saving results to {os.path.join(root_dir, save_dir, Path("results.json"))}')
     if not os.path.exists(save_dir):
         os.makedirs(save_dir, exist_ok=True)
