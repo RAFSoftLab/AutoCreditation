@@ -46,7 +46,6 @@ def cyrillic_to_latin(text):
     Returns:
         str: Text with latin characters
     '''
-
     for i in range(len(text)):
         if text[i] in CYR_TO_LAT_DICT:
             text = text.replace(text[i], CYR_TO_LAT_DICT[text[i]])

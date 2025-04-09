@@ -14,7 +14,7 @@ from PyQt5.QtGui import QPixmap, QFont
 import PyQt5.QtGui as QtGui
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QSystemTrayIcon, QPushButton, QDesktopWidget,
                              QLineEdit, QTextEdit, QWidget, QLabel, QCheckBox, QGridLayout, QVBoxLayout,
-                             QProgressBar, QStackedWidget, QFrame, QTabWidget)
+                             QProgressBar, QStackedWidget, QFrame, QTabWidget, QFileDialog)
 # TODO Remove after debugging:
 # import debugpy
 from pyqtspinner.spinner import WaitingSpinner
@@ -120,12 +120,12 @@ class MainWindow(QMainWindow):
 
         # Results button
         self.results_button = QPushButton(self)
-        self.results_button.setText("Results")
-        self.results_button.setToolTip("Open results in explorer.")
+        self.results_button.setText("Results Explorer")
+        self.results_button.setToolTip("Open results and documentation explorer.")
         # self.results_button.move(660, 90)
         self.results_button.setMinimumWidth(150)
-        self.results_button.setEnabled(self.finished)
-        self.results_button.clicked.connect(self.open_explorer)
+        self.results_button.setEnabled(self.finished or (os.path.exists(os.path.join(self.root_dir, Path('tmp/results/results.json')))))
+        self.results_button.clicked.connect(self.load_results)
         self.control_panel.addWidget(self.results_button, 2, 4, 1, 2)
 
         # Valid directory check label
@@ -159,7 +159,11 @@ class MainWindow(QMainWindow):
         self.options_panel_layout = QVBoxLayout()
         self.options_panel_layout.setContentsMargins(10, 10, 10, 10)
         self.options_panel_layout.setSpacing(5)
-        self.load_results_button = QPushButton("Load Results", clicked=self.load_results)
+        self.save_results_button = QPushButton("Save Results", clicked=self.save_data)
+        self.save_results_button.setToolTip("Save results to a .json file.")
+        self.save_results_button.setMinimumWidth(150)
+        self.options_panel_layout.addWidget(self.save_results_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+        self.load_results_button = QPushButton("Load Results", clicked=self.load_data)
         self.load_results_button.setToolTip("Load results from previous run.")
         self.load_results_button.setMinimumWidth(150)
         self.options_panel_layout.addWidget(self.load_results_button, alignment=Qt.AlignmentFlag.AlignHCenter)
@@ -267,7 +271,10 @@ class MainWindow(QMainWindow):
 
     def toggle_options(self, set_view='-1'):
         """
-        Switch to options panel
+        Switch to options panel or progress panel.
+
+        Args:
+            set_view (str):     View to be switched to, either 'options' or 'progress'
         """
         view_map = {
             'progress' : 0,
@@ -280,7 +287,6 @@ class MainWindow(QMainWindow):
             '0': 'Options',
             '1': 'Show Progress'
         }
-
         self.stack.setCurrentIndex(view_map[set_view])
         self.options_button.setText(button_text_map[str(view_map[set_view])])
 
@@ -294,10 +300,7 @@ class MainWindow(QMainWindow):
         """
         Load results from previous run if available, display popup if not
         """
-        results_json_path = os.path.join(self.root_dir, Path('tmp/results/results.json'))
-        prof_json_path = os.path.join(self.root_dir, Path('tmp/professors_data.json'))
-        subj_json_path = os.path.join(self.root_dir, Path('tmp/subjects_data.json'))
-        if False in [True if os.path.exists(curr_path) else False for curr_path in [results_json_path, prof_json_path, subj_json_path]]:
+        if util.check_files_exist(root_dir=self.root_dir) == False:
             popup_message = gui_support.PopupDialog("No results data found. Please run the application first.", 'Data not found', self)
             popup_message.setModal(True)
             popup_message.exec_()
@@ -407,7 +410,6 @@ class MainWindow(QMainWindow):
             else:
                 self.doc_map[item_key] = doc_map[item_key]
 
-    # @QtCore.pyqtSlot()
     def lock_gui(self, lock=True):
         """
         Lock the GUI elements of the main window.
@@ -421,39 +423,6 @@ class MainWindow(QMainWindow):
         else:
             self.run_button.setText("Run")
 
-    def generate_html(self, root_dir=''):
-        """
-        Generates HTML files from the results.
-        """
-        root_dir = root_dir if root_dir != '' else self.root_dir
-        print("Generating HTML files...")
-        try:
-            util.generate_res_html(root_dir=root_dir)
-        except Exception as e:
-            print(f'Error generating HTML files:\n    {e}')
-
-    def generate_prof_html(self, root_dir=''):
-        """
-        Generates professors data HTML file.
-        """
-        root_dir = root_dir if root_dir != '' else self.root_dir
-        print("Generating professors data HTML file...")
-        try:
-            util.generate_prof_html(root_dir=root_dir)
-        except Exception as e:
-            print(f'Error generating professors data HTML file:\n    {e}')
-
-    def generate_subjects_html(self, root_dir=''):
-        """
-        Generates subjects data HTML file.
-        """
-        root_dir = root_dir if root_dir != '' else self.root_dir
-        print("Generating subjects data HTML file...")
-        try:
-            util.generate_subjects_html(root_dir=root_dir)
-        except Exception as e:
-            print(f'Error generating subjects data HTML file:\n    {e}')
-
     def open_explorer(self):
         """
         Open results and file explorer to the results directory.
@@ -466,10 +435,71 @@ class MainWindow(QMainWindow):
         """
         Generates results HTML file and opens explorer
         """
-        self.generate_html()
-        self.generate_prof_html()
-        self.generate_subjects_html()
+        gui_support.generate_html(self.root_dir)
+        gui_support.generate_prof_html(self.root_dir)
+        gui_support.generate_subjects_html(self.root_dir)
         self.open_explorer()
+
+    def save_data(self):
+        """
+        Saves results to a .json file.
+        """
+        if util.check_files_exist(root_dir=self.root_dir) == False:
+            popup_message = gui_support.PopupDialog("No results data found. Please run the application first.", 'Data not found', self)
+            popup_message.setModal(True)
+            popup_message.exec_()
+            return
+        try:
+            self.results = util.load_data(root_dir=self.root_dir, abs_path=os.path.join(self.root_dir, Path('tmp/results/results.json')))
+            self.prof_data = util.load_data(root_dir=self.root_dir, abs_path=os.path.join(self.root_dir, Path('tmp/professors_data.json')))
+            self.subj_data = util.load_data(root_dir=self.root_dir, abs_path=os.path.join(self.root_dir, Path('tmp/subjects_data.json')))
+        except Exception as e:
+            print(f'Error loading data:\n    {e}')
+            return
+        file_path = QFileDialog.getSaveFileName(self, "Save data", os.path.expanduser("~"), filter="*.json")
+        file_path = file_path[0] if type(file_path) in [tuple, list] and file_path[0] != '' else file_path if type(file_path) == str else ''
+        if not file_path.endswith('.json') and not os.path.exists(file_path) and file_path != '':
+            file_path = os.path.join(os.path.dirname(file_path), '.json')
+        if not file_path.endswith('.json') and not file_path == '':
+            file_path = ''
+            error_dialog = gui_support.PopupDialog("File must be a .json file.", "Invalid file selected.", self)
+            error_dialog.setModal(True)
+            error_dialog.exec_()
+        if file_path != '':
+            res_data = {'results': self.results, 'professors': self.prof_data, 'subjects': self.subj_data}
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            util.save_json(file_path=file_path, data=res_data)
+            saved_dialog = gui_support.PopupDialog(f"Results saved to {file_path}.", "Results saved", self)
+            saved_dialog.setModal(True)
+            saved_dialog.exec_()
+
+    def load_data(self):
+        """
+        Opens file explorer to choose a file to load.
+        """
+        file_path = ''
+        file_path = QFileDialog.getOpenFileName(self, "Load data", os.path.expanduser("~"))
+        file_path = file_path[0] if type(file_path) in [tuple, list] and file_path[0] != '' else file_path if type(file_path) == str else ''
+        if not file_path.endswith('.json') and not file_path == '':
+            file_path = ''
+            error_dialog = gui_support.PopupDialog("File must be a .json file.", "Invalid file selected.", self)
+            error_dialog.setModal(True)
+            error_dialog.exec_()
+        if file_path != '':
+            os.makedirs(os.path.join(self.root_dir, Path('tmp/results')), exist_ok=True)
+            all_data = util.load_json(file_path=file_path)
+            if 'results' not in all_data.keys():
+                error_dialog = gui_support.PopupDialog("Save file is invalid: data format unsupported.", "Invalid file selected.", self)
+                error_dialog.setModal(True)
+                error_dialog.exec_()
+                return
+            util.save_data(root_dir=self.root_dir, data=all_data['results'], save_dir='tmp/results', data_name='results')
+            util.save_data(root_dir=self.root_dir, data=all_data['professors'], save_dir='tmp', data_name='professors_data')
+            util.save_data(root_dir=self.root_dir, data=all_data['subjects'], save_dir='tmp', data_name='subjects_data')
+            self.results_button.setEnabled(True)
+            loaded_dialog = gui_support.PopupDialog(f"Data from {file_path} loaded.", "Data loaded", self)
+            loaded_dialog.setModal(True)
+            loaded_dialog.exec_()
 
 
     @QtCore.pyqtSlot(dict)

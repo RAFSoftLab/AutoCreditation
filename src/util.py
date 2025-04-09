@@ -48,7 +48,6 @@ def clear_tmp_dir(root_dir):
     Returns:
         None
     """
-
     tmp_dir = os.path.join(root_dir, Path('tmp'))
     try:
         if os.path.exists(tmp_dir):
@@ -68,7 +67,6 @@ def process_name(name, file=False, skip_ext=True):
     Returns:
         (str):              Processed name, with special characters removed
     """
-
     name = name.replace(' ', '_').replace('(', '_').replace(')', '_').replace('-', '_')
     if skip_ext == False and file == False:
         return re.escape(name)
@@ -77,7 +75,6 @@ def process_name(name, file=False, skip_ext=True):
     ext = name.split('.')[-1]
     name = re.sub(r'\.{}$'.format(ext), '', name)
     return '{}.{}'.format(re.escape(name), ext)
-
 
 def tree(dir_path: Path, level: int=-1, limit_to_directories: bool=False, length_limit: int=1000, save_dir: str='', print_tree=True):
     '''
@@ -94,7 +91,6 @@ def tree(dir_path: Path, level: int=-1, limit_to_directories: bool=False, length
     Returns:
         struct_txt (str):               Tree structure as a string
     '''
-
     # Tree structure symbols
     space =  '    '
     branch = '│   '
@@ -161,7 +157,6 @@ def print_save_tree(root_dir, formed_tree='', dir_path='', save_dir='', print_tr
     Returns:
         (str):                  Formed tree structure as a string
     '''
-
     save_dir = os.path.join(root_dir, Path('tmp')) if save_dir != '' else save_dir
 
     # If formed_tree is not passed, tree is generated for the given dir_path directory and saved as a .txt file in the save_dir directory
@@ -203,7 +198,6 @@ def dir_struct(doc_dir, process_names=False, convert_to_latin=False):
     Returns:
         dir_struct (dict):       Dictionary representing directory: {'name': <name of the file/directory>, 'processed_name': <name with special characters removed>, 'type': <"file" or "directory">, 'path': <path to file/directory>, 'contents': <for directories only (else empty): list of all files in the directory>}
     """
-
     name = doc_dir.split(os.sep)[-1]
     type = 'directory' if os.path.isdir(doc_dir) else 'file'
     processed_name = util.process_name(name=name, file=True if type == 'file' else False) if process_names == True else name
@@ -228,6 +222,38 @@ def dir_struct(doc_dir, process_names=False, convert_to_latin=False):
         contents.append(dir_struct(os.path.join(doc_dir, dir_item), process_names=process_names))
     return {'name': name, 'orig_name': orig_name, 'processed_name': processed_name, 'type': type, 'path': doc_dir, 'contents': contents}
 
+def save_json(file_path, data):
+    """
+    Saves the given data to a .json file.
+
+    Args:
+        file_path (str):         Path to the file where the data is saved
+        data (dict):             Data to be saved
+
+    Returns:
+        None
+    """
+    with open(file_path, "w", encoding="utf-8") as file:
+        json.dump(data, file, indent=4)
+
+def load_json(file_path):
+    """
+    Loads the data from a .json file.
+
+    Args:
+        file_path (str):         Path to the file where the data is saved
+
+    Returns:
+        (dict):                  Data
+    """
+    try:
+        with open(file_path, "r", encoding="utf-8") as file:
+            data = json.load(file)
+        return data
+    except Exception as e:
+        print(f'Error loading data:\n    {e}')
+        return {}
+
 def save_data(root_dir, data, save_dir='tmp', data_name='data'):
     """
     Saves the given data to a .json file.
@@ -243,8 +269,7 @@ def save_data(root_dir, data, save_dir='tmp', data_name='data'):
     """
     save_dir = save_dir[1] if save_dir[0] == os.sep else save_dir
     save_path = os.path.join(root_dir, Path(save_dir), f'{data_name}.json')
-    with open(save_path, 'w', encoding='utf-8') as f:
-        json.dump(data, f, indent=4)
+    save_json(file_path=save_path, data=data)
     return save_path
 
 def load_data(root_dir, abs_path='', save_dir='tmp', data_name='data'):
@@ -260,11 +285,9 @@ def load_data(root_dir, abs_path='', save_dir='tmp', data_name='data'):
     Returns:
         (dict):                   Data
     """
-
     save_dir = save_dir[1] if save_dir[0] == os.sep else save_dir
     save_path = os.path.join(root_dir, Path(save_dir), f'{data_name}.json') if abs_path == '' else abs_path
-    with open(save_path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
+    data = load_json(file_path=save_path)
     return data
 
 def find_main_doc(docs):
@@ -277,9 +300,7 @@ def find_main_doc(docs):
     Returns:
         (dict):         Main documentation file
     """
-
     main_doc = {}
-
     for doc in docs:
         if re.search(r'^Dokumentacija', doc['name']):
             main_doc = doc
@@ -300,7 +321,6 @@ def find_studies_programme(root_dir, html_file_lat):
     Returns:
         (str):                 Name of the studies programme
     """
-
     # Read file if path is given
     if os.path.exists(html_file_lat) and os.path.isfile(html_file_lat):
         html_file_lat_txt = ''
@@ -310,7 +330,6 @@ def find_studies_programme(root_dir, html_file_lat):
             html_file_lat = html_file_lat_txt
         else:
             raise Exception('File not found or empty')
-
     studies_programme, studies_type = '', ''
     studies_programme_found = False
     stud_type_found = False
@@ -346,7 +365,6 @@ def find_studies_programme(root_dir, html_file_lat):
                         studies_type = re.sub(re.escape(colName), '', col)
                     stud_type_found = True
                     break
-
     results_save_read.save_results(root_dir=root_dir, results={'studies_programme': studies_programme, 'studies_type': studies_type})
     return {'studies_programme': studies_programme, 'studies_type': studies_type}
 
@@ -364,36 +382,29 @@ def find_link_tags(root_dir, doc_dir, html_file_txt, file_format='md'):
         (list):                List of link
 
     """
-
     link_tag_lines = []
     link_tags = []
-
     if file_format == 'md':
         for line in html_file_txt.split('\n'):
             if re.search(r'\(file\:', line) or re.search(r'\(\.\.\{}'.format(os.sep), line):
                 link_tag_lines.append(line)
     else:
         link_tag_lines = re.findall(r'\<p\>.*?\<a href\=.*?\<\/a\>.*?\<\/p\>', html_file_txt)
-
     # Save link tag lines to a file
     if not os.path.exists(os.path.join(root_dir, Path('tmp'))):
         os.makedirs(os.path.join(root_dir, Path('tmp')))
     with open(os.path.join(root_dir, Path('tmp/link_tags.txt')), 'w', encoding='utf-8') as f:
         f.write('\n'.join(link_tag_lines))
-
     found_tags = []
-
     for indexLine, line in enumerate(link_tag_lines):
         all_line_tags = extract_path_from_tag(line, doc_dir=doc_dir)
         if all_line_tags == ['not_file_link']:
             continue
         for tag in all_line_tags:
             found_tags.append(tag)
-
     # Save found tags to a file
     with open(os.path.join(root_dir, Path('tmp/found_file_links.json')), 'w', encoding='utf-8') as f:
         json.dump(found_tags, f, indent=4)
-
     return found_tags
 
 def extract_path_from_tag(tag_line, doc_dir='', file_format='html'):
@@ -408,14 +419,10 @@ def extract_path_from_tag(tag_line, doc_dir='', file_format='html'):
     Returns:
         (str):                  Path extracted from the tag
     """
-
     line_tags = []
-
-    # TODO: HTML tags
     tag_abs_path = r'file\:\/\/\/'
     tag_rel_path = r'\.\.\/'
     abs_path = True if re.search(tag_abs_path, tag_line) else False
-
     if file_format == 'html':
         tag_desc = ''
         # Skipping links to file sections and to webpages
@@ -491,7 +498,6 @@ def extract_path_from_tag(tag_line, doc_dir='', file_format='html'):
                 tag_path = re.findall(r'\({}.+\)'.format(file_tag), tag)[0]
             tag_path = tag_path[6:] if tag_path[0:6] == '(file:' else tag_path[3:] if tag_path[0:3] == '(..' else tag_path
             tag_path = tag_path[:-1] if tag_path[-1] == ')' else tag_path
-
             while tag_path[0] == '/':
                 tag_path = tag_path[1:]
             # Convert to readable path
@@ -538,7 +544,6 @@ def verify_hyperlinks(root_dir, found_hyperlinks):
     Returns:
         (list):                  List of hyperlinks that do not exist
     """
-
     unmatched_hyperlinks = []
     for hyperlink in found_hyperlinks:
         hyperlink_verified = False
@@ -571,11 +576,9 @@ def update_hyperlinks(root_dir, new_hyperlinks):
     Returns:
         None
     """
-
     if not os.path.exists(os.path.join(root_dir, Path('tmp'))):
         os.makedirs(os.path.join(root_dir, Path('tmp')))
-    with open(os.path.join(root_dir, Path('tmp/found_file_links.json')), 'w', encoding='utf-8') as f:
-        json.dump(new_hyperlinks, f, indent=4)
+    save_data(root_dir=root_dir, data=new_hyperlinks, save_dir='tmp', data_name='found_file_links')
 
 def generate_res_html(root_dir=''):
     """
@@ -680,17 +683,22 @@ def generate_prof_html(root_dir=''):
                 else:
                     prof_list_table += f'{8 * " "}<tr>\n{12 * " "}<th>Num</th><th>Professor</th><th>Title<\th>\n</tr>\n'
                     for prof_item in prof_data_item['data']:
-                        prof_list_table += f'{8 * " "}<tr>\n{12 * " "}<td>{prof_item["ord_num"] if "ord_num" in prof_item.keys() else ""}</td>\n<td>{prof_item["prof_name"] if "prof_name" in prof_item.keys() else ""}</td>\n<td>{prof_item["prof_title"] if "prof_title" in prof_item.keys() else ""}</td>\n</tr>\n'
+                        prof_list_table += f'{8 * " "}<tr>\n{12 * " "}<td>{prof_item["ord_num"] if "ord_num" in prof_item.keys() else ""}</td>\n\
+                                                                        <td>{prof_item["prof_name"] if "prof_name" in prof_item.keys() else ""}</td>\n\
+                                                                            <td>{prof_item["prof_title"] if "prof_title" in prof_item.keys() else ""}</td>\n</tr>\n'
                     prof_data_html += f'<table>\n{4 * " "}{prof_list_table}\n</table>\n'
             if 'type' in prof_data_item.keys() and prof_data_item['type'] == 'prof_tables':
                 prof_data_html += f'<h2>Professor details table</h2>\n'
-
                 if 'data' not in prof_data_item.keys():
                     prof_data_html += f'<p>No professors tables found.</p>\n'
                 else:
                     prof_data_tables = f'{8 * " "}<tr>\n{12 * " "}<th>Professor</th><th>Title</th><th>Institution</th><th>Sci. discipline</th><th>Subjects</th>\n</tr>\n'
                     for prof_item in prof_data_item['data']:
-                        prof_data_tables += f'{8 * " "}<tr>\n{12 * " "}<td>{prof_item["name"] if "name" in prof_item.keys() else ""}</td><td>{prof_item["title"] if "title" in prof_item.keys() else ""}</td><td>{prof_item["institution"] if "institution" in prof_item.keys() else ""}</td><td>{prof_item["sci_discipline"] if "sci_discipline" in prof_item.keys() else ""}</td><td><a href="{prof_item["table_key"] if "table_key" in prof_item.keys() else ""}">Subjects</a></td>\n</tr>\n'.format(prof_item['subjects_html_path'] if 'subjects_html_path' in prof_item.keys() else '')
+                        prof_data_tables += f'{8 * " "}<tr>\n{12 * " "}<td>{prof_item["name"] if "name" in prof_item.keys() else ""}</td>\n\
+                                                                        <td>{prof_item["title"] if "title" in prof_item.keys() else ""}</td>\n\
+                                                                            <td>{prof_item["institution"] if "institution" in prof_item.keys() else ""}</td>\n\
+                                                                                <td>{prof_item["sci_discipline"] if "sci_discipline" in prof_item.keys() else ""}</td>\n\
+                                                                                <td><a href="{prof_item["table_key"] if "table_key" in prof_item.keys() else ""}">Subjects</a></td>\n</tr>\n'#.format(prof_item['subjects_html_path'] if 'subjects_html_path' in prof_item.keys() else '')
                     prof_data_html += f'<table>\n{4 * " "}{prof_data_tables}\n</table>\n'
         prof_data_html = f'<html>\n<head>\n<style>\ntable {{\n    border: 1px solid black;\n    border-collapse: collapse;\n}}\nth, td {{\n    border: 1px solid black;\n    padding: 5px;\n    margin: 0px auto;\n    border-collapse: collapse;\n}}\n</style>\n</head>\n<body>\n{prof_data_html}\n</body>\n</html>'
         with open(os.path.join(root_dir, Path('tmp/results/professors_data.html')), mode='w', encoding='utf-8') as f:
@@ -710,6 +718,9 @@ def generate_subjects_html(root_dir=''):
     print("Generating subjects HTML file...")
     if os.path.exists(os.path.join(root_dir, Path('tmp/subjects_data.json'))):
         subj_data = util.load_data(root_dir=root_dir, abs_path=os.path.join(root_dir, Path('tmp/subjects_data.json')))
+        prof_data = util.load_data(root_dir=root_dir, abs_path=os.path.join(root_dir, Path('tmp/professors_data.json')))
+        prof_tables = [i for i in prof_data if 'type' in i.keys() and i['type'] == 'prof_tables']
+        prof_tables = prof_tables[0]['data'] if len(prof_tables) > 0 else []
         subj_data_html = ''
         for subj_data_item in subj_data:
             if 'type' in subj_data_item.keys() and subj_data_item['type'] == 'subj_list':
@@ -733,18 +744,25 @@ def generate_subjects_html(root_dir=''):
                     subj_data_html += f'<table>\n{4 * " "}{subj_list_table}\n</table>\n'
             if 'type' in subj_data_item.keys() and subj_data_item['type'] == 'subj_tables':
                 subj_data_html += f'<h2>Subject details table</h2>\n'
-
                 if 'data' not in subj_data_item.keys():
                     subj_data_html += f'<p>No subjects tables found.</p>\n'
                 else:
                     subj_data_tables = f'{8 * " "}<tr>\n{12 * " "}<th>School</th><th>Studies Programme</th><th>Full Name</th><th>Subject Code</th><th>Subject Name</th><th>Professor</th><th>Subject Status</th><th>ESPB</th><th>Condition</th><th>Theory Classes</th><th>Practical Classes</th>\n</tr>\n'
                     for subj_item in subj_data_item['data']:
+                        subject_prof = subj_item['professor'] if 'professor' in subj_item.keys() else ''
+                        subj_prof = [i.strip() for i in subject_prof.split(',')] if len(subject_prof) > 0 else []
+                        prof_details = []
+                        for indexI, subj_prof_item in enumerate(subj_prof):
+                            prof_details_curr = [prof_item for prof_item in prof_tables if 'name' in prof_item.keys() and util.compare_prof_names(prof_item['name'], subj_prof_item)]
+                            prof_details_curr = prof_details_curr[0] if len(prof_details_curr) > 0 else {}
+                            prof_details.append(prof_details_curr)
+                        subj_prof_html = ', '.join([f'<a href={prof_details[itemI]["table_key"] if itemI < len(prof_details) and prof_details[itemI] != {} and "table_key" in prof_details[itemI].keys() else ""}>{subj_prof[itemI] if itemI < len(subj_prof) else ""}</a>' for itemI in range(len(subj_prof))])
                         subj_data_tables += f'{8 * " "}<tr>\n{12 * " "}<td>{subj_item["school"] if "school" in subj_item.keys() else ""}</td>\
                                                                         <td>{subj_item["studies_programme"] if "studies_programme" in subj_item.keys() else ""}</td>\
                                                                             <td>{subj_item["subject"] if "subject" in subj_item.keys() else ""}</td>\
                                                                                 <td>{subj_item["subject_code"] if "subject_code" in subj_item.keys() else ""}</td>\
                                                                                     <td>{subj_item["subject_name"] if "subject_name" in subj_item.keys() else ""}</td>\
-                                                                                        <td>{subj_item["professor"] if "professor" in subj_item.keys() else ""}</td>\
+                                                                                        <td>{subj_prof_html}</td>\
                                                                                             <td>{subj_item["subject_status"] if "subject_status" in subj_item.keys() else ""}</td>\
                                                                                                 <td>{subj_item["espb"] if "espb" in subj_item.keys() else ""}</td>\
                                                                                                     <td>{subj_item["condition"] if "condition" in subj_item.keys() else ""}</td>\
@@ -755,3 +773,64 @@ def generate_subjects_html(root_dir=''):
         with open(os.path.join(root_dir, Path('tmp/results/subjects_data.html')), mode='w', encoding='utf-8') as f:
             f.write(subj_data_html)
 
+def generate_prof_subject_html(root_dir='', subjects_data=[]):
+    """
+    Generates HTML file for professor subjects table, saves it to a file and returns the file content.
+
+    Args:
+        root_dir (str):          Root directory of the project, absolute path
+        subjects_data (dict):    Professor subjects data
+
+    Returns:
+        (str):                   HTML file content
+    """
+    print("Generating professors subjects HTML file...")
+    prof_subjects_html = f'{8 * " "}<tr>\n{12 * " "}<th>Subject Code</th><th>Subject Name</th><th>Type</th><th>Studies Programme</th><th>Studies Type</th>\n</tr>\n'
+    for prof_item in subjects_data['subjects']:
+        prof_subjects_html += f'{8 * " "}<tr>\n{12 * " "}<td>{prof_item["code"] if "code" in prof_item.keys() else ""}</td>\
+                                                            <td>{prof_item["name"] if "name" in prof_item.keys() else ""}</td>\
+                                                                <td>{prof_item["type"] if "type" in prof_item.keys() else ""}</td>\
+                                                                    <td>{prof_item["studies_programme"] if "studies_programme" in prof_item.keys() else "'"}</td>\
+                                                                        <td>{prof_item["studies_type"] if "studies_type" in prof_item.keys() else "'"}</td>\n</tr>\n'
+    prof_details = f'<h2>Professor subjects table</h2>\n<h3>Professor: {subjects_data["name"]}</h3>\n<br>\n'
+    prof_subjects_html = f'<html>\n<head>\n<style>\ntable {{\n    border: 1px solid black;\n    border-collapse: collapse;\n}}\nth, td {{\n    border: 1px solid black;\n    padding: 5px;\n    margin: 0px auto;\n    border-collapse: collapse;\n}}\n</style>\n</head>\n<body>{prof_details}\n<table>\n{4 * " "}{prof_subjects_html}\n</table>\n</body>\n</html>'
+    with open(os.path.join(root_dir, Path('tmp/results/professors_subjects.html')), mode='w', encoding='utf-8') as f:
+        f.write(prof_subjects_html)
+    print("Professors subjects HTML file generated.")
+    return prof_subjects_html
+
+def check_files_exist(root_dir=''):
+    """
+    Checks if the results, professors and subjects data files exist.
+
+    Args:
+        root_dir (str):          Root directory of the project, absolute path
+
+    Returns:
+        (bool):                  True if the files exist, False otherwise
+    """
+    results_json_path = os.path.join(root_dir, Path('tmp/results/results.json'))
+    prof_json_path = os.path.join(root_dir, Path('tmp/professors_data.json'))
+    subj_json_path = os.path.join(root_dir, Path('tmp/subjects_data.json'))
+    return False if False in [True if os.path.exists(curr_path) else False for curr_path in [results_json_path, prof_json_path, subj_json_path]] else True
+
+def compare_prof_names(prof_name1, prof_name2):
+    """
+    Compares two professor names, excluding middle names.
+
+    Args:
+        prof_name1 (str):        First professor name
+        prof_name2 (str):        Second professor name
+
+    Returns:
+        (bool):                  True if the names are the same, False otherwise
+    """
+    prof_name1 = [i.strip() for i in prof_name1.split(' ') if i != '']
+    prof_name2 = [i.strip() for i in prof_name2.split(' ') if i != '']
+    # Remove middle name if it is present in one of the names
+    if len(prof_name1) > 2 and len(prof_name1) == len(prof_name2) + 1:
+        prof_name1.pop(1)
+    elif len(prof_name2) > 2 and len(prof_name2) == len(prof_name1) + 1:
+        prof_name2.pop(1)
+    # Compare names
+    return True if prof_name1 == prof_name2 else False

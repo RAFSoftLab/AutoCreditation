@@ -6,9 +6,9 @@ import os
 import PyQt5.QtCore as QtCore
 import PyQt5.QtGui as QtGui
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QListWidget,
+    QApplication, QMainWindow, QSystemTrayIcon, QWidget, QVBoxLayout, QHBoxLayout, QListWidget,
     QTreeView, QFileSystemModel, QSplitter, QLabel, QPushButton, QLineEdit,
-    QStackedWidget, QTextEdit, QFileDialog, QListWidgetItem
+    QStackedWidget, QTextBrowser, QFileDialog, QListWidgetItem
 )
 from PyQt5.QtCore import Qt
 from pyqtspinner.spinner import WaitingSpinner
@@ -25,9 +25,17 @@ class FileExplorer(QMainWindow):
 
         self.root_dir = os.getcwd() if root_dir == '' else root_dir
         self.gen_tree = ''
+        self.side_bar_items = ["Results", "  Documentation Tree", "  Final Results", "  Professors", "  Subjects", "File Explorer"]
+        self.current_view = 'Results'
+        self.dir_name = os.path.dirname(__file__)
 
         self.setWindowTitle("Dashboard File Explorer")
         self.setGeometry(200, 100, 1000, 600)  # Initial size, but not fixed
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap(os.path.join(self.dir_name, Path("resources/raf_logo_win.png"))), QtGui.QIcon.Normal, QtGui.QIcon.On)
+        self.setWindowIcon(icon)
+        self.trayIcon = QSystemTrayIcon(self)
+        self.trayIcon.setIcon(icon)
 
         # Main Layout
         main_widget = QWidget()
@@ -37,7 +45,7 @@ class FileExplorer(QMainWindow):
 
         # Sidebar
         self.sidebar = QListWidget()
-        for item in ["Results", "  - Documentation Tree", "  - Final Results", "  - Professors", "  - Subjects", "File Explorer"]:
+        for item in self.side_bar_items:
             item_elem = QListWidgetItem()
             item_elem.setText(item)
             if item in ["Results", "File Explorer"]:
@@ -62,9 +70,11 @@ class FileExplorer(QMainWindow):
         self.file_view.doubleClicked.connect(self.open_item)
 
         # Results Panel (HTML Viewer with QTextEdit)
-        self.html_viewer = QTextEdit()
+        self.html_viewer = QTextBrowser()
         self.html_viewer.setReadOnly(True)
         self.html_viewer.setHtml(f"<h2>Results & File Explorer</h2><p>Choose option from side panel - view results or explore documentation files.</p>")  # Default HTML file
+        self.html_viewer.anchorClicked.connect(self.open_link)
+        self.html_viewer.setOpenLinks(False)
 
         # Adding Panels to Stack
         explorer_widget = QWidget()
@@ -120,22 +130,28 @@ class FileExplorer(QMainWindow):
         text = item.text().strip()
         if text == "File Explorer":
             self.stack.setCurrentIndex(1)  # Show File Explorer
+            self.current_view = 'File Explorer'
         elif text in ["Results", ""]:  # Results Panel
             self.sidebar.setCurrentRow(self.sidebar.currentRow() + 1)  # Move to Documentation Tree
             self.load_documentation_tree()
             self.stack.setCurrentIndex(0)  # Show Results Panel
-        elif text == "- Documentation Tree":
+            self.current_view = 'Results'
+        elif text == "Documentation Tree":
             self.load_documentation_tree()
             self.stack.setCurrentIndex(0)  # Show Results Panel
-        elif text == "- Final Results":
+            self.current_view = 'Documentation Tree'
+        elif text == "Final Results":
             self.load_html_content("results/results.html")
             self.stack.setCurrentIndex(0)
-        elif text == "- Professors":
+            self.current_view = 'Final Results'
+        elif text == "Professors":
             self.load_html_content("results/professors_data.html")
             self.stack.setCurrentIndex(0)
-        elif text == "- Subjects":
+            self.current_view = 'Professors'
+        elif text == "Subjects":
             self.load_html_content("results/subjects_data.html")
             self.stack.setCurrentIndex(0)
+            self.current_view = 'Subjects'
 
     def load_documentation_tree(self):
         """
@@ -173,7 +189,6 @@ class FileExplorer(QMainWindow):
             elif filename.endswith('.html') and os.path.exists(os.path.join(self.root_dir if root_dir == '' else root_dir, Path(f"tmp/{filename.split(os.sep if re.search(re.escape(os.sep), filename) else '/')[-1][:-5]}.json"))):
                 with open(os.path.join(self.root_dir if root_dir == '' else root_dir, Path(f"tmp/{filename.split(os.sep if re.search(re.escape(os.sep), filename) else '/')[-1][:-5]}.json")), "r", encoding="utf-8") as file:
                     html_content = json.load(file)
-                # TODO: Subject field in professors data click opens subjects table in new window
             else:
                 self.html_viewer.setHtml(f"<h2>No data found</h2><p>{filename} is missing.</p>")
         except Exception as e:
@@ -217,6 +232,11 @@ class FileExplorer(QMainWindow):
     def load_gen_tree(self, gen_tree):
         """
         Loads the generated documentation tree.
+
+        Args:
+            gen_tree (str):     Generated documentation tree
+        Returns:
+            None
         """
         self.gen_tree = gen_tree
         self.load_documentation_tree()
@@ -236,6 +256,42 @@ class FileExplorer(QMainWindow):
         self.worker.generated_tree.connect(self.load_gen_tree)
         self.thread.start()
 
+    def open_link(self, link):
+        """
+        Opens data represented by the given link in a new window.
+
+        Args:
+            link (str):     Link to the data.
+        Returns:
+            None
+        """
+        try:
+            if self.current_view in ['Professors', 'Subjects']:
+                data_file = Path('tmp/professors_data.json')
+                with open(os.path.join(self.root_dir, data_file), "r", encoding="utf-8") as file:
+                    data = json.load(file)
+                try:
+                    table_data = [i for i in data if 'type' in i.keys() and i['type'] == 'prof_tables'][0]['data']
+                except Exception as e:
+                    table_data = []
+                for item in table_data:
+                    if str(item['table_key']) != link.toString():
+                        continue
+                    subj_html = util.generate_prof_subject_html(root_dir=self.root_dir, subjects_data=item)
+                    self.new_window = TableWindow(dir_name=self.dir_name, table_html=subj_html)
+                    self.new_window.setWindowTitle(f"Professor: {item['name']}")
+                    self.new_window.show()
+                    break
+            elif self.current_view == 'Final Results':
+                data_file = Path('tmp/results/results.json')
+                with open(os.path.join(self.root_dir, data_file), "r", encoding="utf-8") as file:
+                    data = json.load(file)
+                # No links in final results view
+        except Exception as e:
+            print(f'Error loading file:\n    {e}')
+            self.html_viewer.setHtml(f"<h2>Error loading data</h2><p>{data_file} is missing or invalid.</p>")
+            return
+
 class Worker(QtCore.QObject):
     """
     Worker class for generating the documentation tree.
@@ -251,6 +307,33 @@ class Worker(QtCore.QObject):
     def run(self):
         gen_tree = util.tree(dir_path=os.path.join(self.root_dir, Path('tmp/input_files')))
         self.generated_tree.emit(gen_tree)
+
+class TableWindow(QWidget):
+    """
+    Window for displaying HTML tables.
+    """
+    def __init__(self, parent=None, dir_name='', table_html=''):
+        super(TableWindow, self).__init__(parent)
+        self.setGeometry(250, 150, 1000, 600)
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap(os.path.join(dir_name, Path("resources/raf_logo_win.png"))), QtGui.QIcon.Normal, QtGui.QIcon.On)
+        self.setWindowIcon(icon)
+        self.trayIcon = QSystemTrayIcon(self)
+        self.trayIcon.setIcon(icon)
+        self.initUI(table_html=table_html)
+
+    def initUI(self, table_html=''):
+        self.layout = QVBoxLayout()
+        self.table_view = QTextBrowser()
+        self.table_view.setReadOnly(True)
+        self.table_view.setHtml(table_html)
+        self.layout.addWidget(self.table_view)
+        self.setLayout(self.layout)
+        self.setWindowModality(Qt.ApplicationModal)
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key.Key_Escape:
+            self.close()
 
 
 if __name__ == "__main__":

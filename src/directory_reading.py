@@ -28,17 +28,12 @@ def list_dir(root_dir, dir_to_list='', dir_tree='', save_struct=True, convert_to
         (str):                   Tree structure representation of the directory
 
     """
-
     dir_to_list = os.path.join(root_dir, Path('tmp/imput_files')) if dir_to_list == '' else dir_to_list
-
     dir_struct = []
-
     # Print and save tree structure of the documentation directory
     dir_tree = util.print_save_tree(root_dir=root_dir, formed_tree=dir_tree, dir_path=dir_to_list, save_dir=os.path.join(root_dir, Path('tmp')), print_tree=False)
-
     # Read a structure of the documentation directory
     dir_struct = util.dir_struct(doc_dir=dir_to_list, process_names=True, convert_to_latin=convert_to_latin)
-
     if save_struct == True:
         # Save structure of the documentation directory
         struct_save_dir = os.path.join(root_dir, 'tmp')
@@ -49,7 +44,6 @@ def list_dir(root_dir, dir_to_list='', dir_tree='', save_struct=True, convert_to
                 json.dump(dir_struct, f, indent=4)
         except Exception as e:
             print(f'Error saving structure to {os.path.join(struct_save_dir, Path('documentation_structure.json'))}:\n    {e}')
-
     return dir_struct, dir_tree
 
 def load_list_dir(root_dir, dir_struct_file='/tmp/documentation_structure.json'):
@@ -63,9 +57,7 @@ def load_list_dir(root_dir, dir_struct_file='/tmp/documentation_structure.json')
     Returns:
         (dict or None):          Structure of documentation directory
     """
-
     dir_struct = None
-
     # Remove '/' from start of path if it is present
     dir_struct_file = dir_struct_file[1:] if dir_struct_file[0] == '/' else dir_struct_file
     dir_struct_file = Path(dir_struct_file)
@@ -102,18 +94,14 @@ def copy_read_doc_dir(root_dir, documentation_dir, working_dir='/tmp/input_files
         (str):                              Tree structure representation of the directory
         (str):                              Absolute path to the working directory (where the copied documentation directory is saved)
     """
-
     # documentation_dir = r"{}".format(documentation_dir)
     documentation_dir = Path(documentation_dir)
-
     # Add '/' to start of paths if it is not present
     # working_dir = '/{}'.format(working_dir) if working_dir[0] != '/' else working_dir
     # Remove '/' from start of paths if it is present
     working_dir = working_dir[1:] if working_dir[0] == '/' else working_dir
     working_dir = Path(working_dir)
-
     doc_dir_path = documentation_dir if copy_documentation == False else os.path.join(root_dir, working_dir)
-
     # Remove processed_dir and all its contents if it exists if clear_dir is set to True
     if clear_dir == True:
         print(f'Clearing {working_dir}')
