@@ -34,11 +34,12 @@ class Worker(QObject):
     updated_results = pyqtSignal(dict)
     update_errors = pyqtSignal(list)
     update_doc_map = pyqtSignal(dict)
-    def setInput(self, root_dir, doc_dir, clean_tmp, copy_files):
+    def setInput(self, root_dir, doc_dir, clean_tmp, copy_files, processing_options):
         self.root_dir = root_dir
         self.doc_dir = doc_dir
         self.clean_tmp = clean_tmp
         self.copy_files = copy_files
+        self.processing_options = processing_options
         self.files_dir = ''
         self.doc_map = {}
         self.resultData = {}

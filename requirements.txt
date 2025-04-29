@@ -3,6 +3,7 @@ mammoth
 PyQt5
 pyqtspinner
 pandas
+ujson
 # aspose-words
 # markitdown
 # textract

@@ -81,6 +81,7 @@ Automated reading and checkup of university acreditation documentation files.
   | pyqtspinner | pip install pyqtspinner | :x: |
   | mammoth | pip install mammoth | conda install auto::mammoth |
   | pandas | pip install pandas | conda install anaconda::pandas |
+  | ujson | pip install ujson | conda install anaconda::ujson |
   ---
 
 

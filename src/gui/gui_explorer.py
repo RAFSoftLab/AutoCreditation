@@ -1,216 +1,546 @@
-import json
+import os
 from pathlib import Path
 import re
+import subprocess
 import sys
-import os
-import PyQt5.QtCore as QtCore
+import ujson as json
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
+                            QHBoxLayout, QPushButton, QLabel, QTabWidget,
+                            QFrame, QSizePolicy, QStackedWidget, QSystemTrayIcon,
+                            QTreeView, QFileDialog, QFileSystemModel, QTextBrowser)
+from PyQt5.QtCore import Qt, QSize
+from PyQt5 import QtCore
 import PyQt5.QtGui as QtGui
-from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QSystemTrayIcon, QWidget, QVBoxLayout, QHBoxLayout, QListWidget,
-    QTreeView, QFileSystemModel, QSplitter, QLabel, QPushButton, QLineEdit,
-    QStackedWidget, QTextBrowser, QFileDialog, QListWidgetItem
-)
-from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon, QFont
 from pyqtspinner.spinner import WaitingSpinner
 
+# TODO: remove after test:
 sys.path.append(os.getcwd())
-
+import src.gui.gui_support as gui_support
 import src.util as util
 
 
 class FileExplorer(QMainWindow):
-
     def __init__(self, root_dir=''):
         super().__init__()
-
-        self.root_dir = os.getcwd() if root_dir == '' else root_dir
-        self.gen_tree = ''
-        self.side_bar_items = ["Results", "  Documentation Tree", "  Final Results", "  Professors", "  Subjects", "File Explorer"]
-        self.current_view = 'Results'
-        self.dir_name = os.path.dirname(__file__)
-
-        self.setWindowTitle("Dashboard File Explorer")
-        self.setGeometry(200, 100, 1000, 600)  # Initial size, but not fixed
+        self.setWindowTitle("AutoCreditation Viewer")
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(os.path.join(self.dir_name, Path("resources/raf_logo_win.png"))), QtGui.QIcon.Normal, QtGui.QIcon.On)
+        icon.addPixmap(QtGui.QPixmap(os.path.join(os.path.dirname(__file__), Path("resources/raf_logo_win.png"))), QtGui.QIcon.Normal, QtGui.QIcon.On)
         self.setWindowIcon(icon)
         self.trayIcon = QSystemTrayIcon(self)
         self.trayIcon.setIcon(icon)
+        self.setMinimumSize(1000, 600)
 
-        # Main Layout
-        main_widget = QWidget()
-        main_layout = QVBoxLayout()
-        main_widget.setLayout(main_layout)
-        self.setCentralWidget(main_widget)
+        self.gen_tree = ''
 
-        # Sidebar
-        self.sidebar = QListWidget()
-        for item in self.side_bar_items:
-            item_elem = QListWidgetItem()
-            item_elem.setText(item)
-            if item in ["Results", "File Explorer"]:
-                item_font = item_elem.font()
-                item_font.setBold(True)
-                item_elem.setFont(item_font)
-            self.sidebar.addItem(item_elem)
-        self.sidebar.itemClicked.connect(self.switch_panel)
-
-        # Stacked Widget (For Switching Between Views)
-        self.stack = QStackedWidget()
-
-        # Explorer Panel (Tree View)
-        self.model = QFileSystemModel()
-        self.model.setRootPath(os.path.expanduser("~"))
-        self.file_view = QTreeView()
-        self.file_view.setModel(self.model)
-        if not os.path.exists(os.path.join(self.root_dir, Path('tmp/input_files'))):
-            self.file_view.setRootIndex(self.model.index(os.path.expanduser("~")))
-        else:
-            self.file_view.setRootIndex(self.model.index(os.path.join(self.root_dir, Path('tmp/input_files'))))
-        self.file_view.doubleClicked.connect(self.open_item)
-
-        # Results Panel (HTML Viewer with QTextEdit)
-        self.html_viewer = QTextBrowser()
-        self.html_viewer.setReadOnly(True)
-        self.html_viewer.setHtml(f"<h2>Results & File Explorer</h2><p>Choose option from side panel - view results or explore documentation files.</p>")  # Default HTML file
-        self.html_viewer.anchorClicked.connect(self.open_link)
-        self.html_viewer.setOpenLinks(False)
-
-        # Adding Panels to Stack
-        explorer_widget = QWidget()
-        explorer_layout = QVBoxLayout()
-        explorer_layout.addWidget(self.file_view)
-        explorer_widget.setLayout(explorer_layout)
-
-        self.stack.addWidget(self.html_viewer)  # Index 0: Results Panel
-        self.stack.addWidget(explorer_widget)  # Index 1: Explorer
-
-        # Top Bar (Navigation for Explorer)
-        self.top_bar = QHBoxLayout()
-        self.path_input = QLineEdit(os.path.expanduser("~"))
-        if os.path.exists(os.path.join(self.root_dir, Path('tmp/input_files'))):
-            self.path_input.setText(os.path.join(self.root_dir, Path('tmp/input_files')))
-        self.go_button = QPushButton("Go")
-        self.browse_button = QPushButton("Browse")
-
-        self.go_button.clicked.connect(self.navigate_to_input_path)
-        self.browse_button.clicked.connect(self.browse_for_folder)
-
-        self.top_bar.addWidget(QLabel("Path:"))
-        self.top_bar.addWidget(self.path_input)
-        self.top_bar.addWidget(self.go_button)
-        self.top_bar.addWidget(self.browse_button)
-
-        # Splitter for Sidebar & Main Area (Makes Layout Responsive)
-        self.splitter = QSplitter(Qt.Horizontal)
-        self.splitter.addWidget(self.sidebar)
-        self.splitter.addWidget(self.stack)
-        self.splitter.setStretchFactor(1, 2)  # Sidebar stays smaller, Main Area stretches
-
-        # Main Layout
-        main_layout.addLayout(self.top_bar)
-        main_layout.addWidget(self.splitter)
-
-        # Default to "Explorer"
-        self.sidebar.setCurrentRow(0)  # Set default selection to Explorer
-        self.stack.setCurrentIndex(0)  # Show Explorer Panel
+        self.root_dir = os.getcwd() if root_dir == '' else root_dir
 
         # Running spinner
-        self.running_spinner = WaitingSpinner(self.html_viewer, True, True, Qt.ApplicationModal)
+        # self.running_spinner = WaitingSpinner(self.html_viewer, True, True, Qt.ApplicationModal)
 
-    def switch_panel(self, item=''):
+        # Initialize the UI
+        self.init_ui()
+
+    def init_ui(self):
+        # Main central widget and layout
+        central_widget = QWidget()
+        main_layout = QHBoxLayout(central_widget)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+        self.setCentralWidget(central_widget)
+
+        # Create sidebar
+        self.sidebar = self.create_sidebar()
+        main_layout.addWidget(self.sidebar)
+
+        # Create content area (stacked widget to switch between different content)
+        self.content_stack = QStackedWidget()
+        main_layout.addWidget(self.content_stack)
+
+        # Set stretch factor to make content area use more space
+        main_layout.setStretchFactor(self.sidebar, 0)
+        main_layout.setStretchFactor(self.content_stack, 4)
+
+        # Create different content widgets for each sidebar option
+        self.create_dashboard_widget()
+        self.create_results_widget()
+        self.create_professor_widget()
+        self.create_subject_widget()
+        self.create_explorer_widget()
+
+        # Set default to Dashboard
+        self.sidebar.findChild(QPushButton, "dashboard_btn").setStyleSheet(
+            "QPushButton { background-color: #3a7ebf; color: white; text-align: left; padding: 10px; border: none; }"
+        )
+        self.content_stack.setCurrentIndex(0)
+        self.showMaximized()
+
+    def create_sidebar(self):
+        # Create sidebar frame
+        sidebar = QFrame()
+        sidebar.setObjectName("sidebar")
+        sidebar.setStyleSheet("""
+            #sidebar {
+                background-color: #2c3e50;
+                min-width: 200px;
+                max-width: 200px;
+            }
+            QPushButton {
+                background-color: #2c3e50;
+                color: white;
+                text-align: left;
+                padding: 10px;
+                border: none;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #34495e;
+            }
+        """)
+
+        # Create sidebar layout
+        sidebar_layout = QVBoxLayout(sidebar)
+        sidebar_layout.setContentsMargins(0, 0, 0, 0)
+        sidebar_layout.setSpacing(0)
+
+        # Create logo or app name area
+        app_name = QLabel("AutoCreditation")
+        app_name.setAlignment(Qt.AlignCenter)
+        app_name.setStyleSheet("color: white; font-size: 18px; font-weight: bold; padding: 20px;")
+        sidebar_layout.addWidget(app_name)
+
+        # Add sidebar buttons
+        dashboard_btn = QPushButton("Overview")
+        dashboard_btn.setObjectName("dashboard_btn")
+        dashboard_btn.setIcon(gui_support.create_icon('home'))
+        dashboard_btn.clicked.connect(lambda: self.show_content(0, dashboard_btn))
+
+        results_btn = QPushButton("Results")
+        results_btn.setObjectName("results_btn")
+        results_btn.setIcon(gui_support.create_icon('bar'))
+        results_btn.clicked.connect(lambda: self.show_content(1, results_btn))
+
+        professors_btn = QPushButton("Professors")
+        professors_btn.setObjectName("professors_btn")
+        professors_btn.setIcon(gui_support.create_icon('group-profile-users'))
+        professors_btn.clicked.connect(lambda: self.show_content(2, professors_btn))
+
+        subjects_btn = QPushButton("Subjects")
+        subjects_btn.setObjectName("subjects_btn")
+        subjects_btn.setIcon(gui_support.create_icon('book'))
+        subjects_btn.clicked.connect(lambda: self.show_content(3, subjects_btn))
+
+        explorer_btn = QPushButton("Explorer")
+        explorer_btn.setObjectName("explorer_btn")
+        explorer_btn.setIcon(gui_support.create_icon('folder'))
+        explorer_btn.clicked.connect(lambda: self.show_content(4, explorer_btn))
+
+        sidebar_layout.addWidget(dashboard_btn)
+        sidebar_layout.addWidget(results_btn)
+        sidebar_layout.addWidget(professors_btn)
+        sidebar_layout.addWidget(subjects_btn)
+        sidebar_layout.addWidget(explorer_btn)
+
+        # Add stretcher to push settings to bottom if desired
+        sidebar_layout.addStretch()
+
+        return sidebar
+
+    def create_dashboard_widget(self):
+        # Dashboard container with top bar and content area organized as tabs
+        dashboard_container = QWidget()
+        dashboard_layout = QVBoxLayout(dashboard_container)
+        dashboard_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Top bar for Dashboard
+        topbar = QFrame()
+        topbar.setStyleSheet("background-color: #f0f0f0; border-bottom: 1px solid #ddd;")
+        topbar_layout = QHBoxLayout(topbar)
+
+        dashboard_label = QLabel("Verification Overview")
+        dashboard_label.setFont(QFont("Arial", 14, QFont.Bold))
+        topbar_layout.addWidget(dashboard_label)
+
+        dashboard_layout.addWidget(topbar)
+
+        # Tab widget for main content
+        tab_widget = QTabWidget()
+
+        # Add tabs to the tab widget
+        summary_tab = QWidget()
+        stats_tab = QWidget()
+        reports_tab = QWidget()
+
+        # Add content to each tab (simplified here)
+        summary_layout = QVBoxLayout(summary_tab)
+        summary_layout.addWidget(QLabel("Summary Content Here"))
+
+        stats_layout = QVBoxLayout(stats_tab)
+        stats_layout.addWidget(QLabel("Statistics Content Here"))
+
+        tab_widget.addTab(summary_tab, "Summary")
+        tab_widget.addTab(stats_tab, "Options")
+
+        dashboard_layout.addWidget(tab_widget)
+
+        self.content_stack.addWidget(dashboard_container)
+
+    def create_results_widget(self):
+        # Tasks container with top bar and content area
+        results_container = QWidget()
+        reuslts_layout = QVBoxLayout(results_container)
+        reuslts_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Top bar for Tasks
+        topbar = QFrame()
+        topbar.setStyleSheet("background-color: #f0f0f0; border-bottom: 1px solid #ddd;")
+        topbar_layout = QHBoxLayout(topbar)
+
+        results_label = QLabel("Results View")
+        results_label.setFont(QFont("Arial", 14, QFont.Bold))
+        topbar_layout.addWidget(results_label)
+
+        # Add some task-specific action buttons to topbar
+        # new_task_btn = QPushButton("New Task")
+        # new_task_btn.setStyleSheet("background-color: #3498db; color: white; padding: 5px 10px;")
+
+        # filter_btn = QPushButton("Filter")
+        # filter_btn.setStyleSheet("padding: 5px 10px;")
+
+        # search_btn = QPushButton("Search")
+        # search_btn.setStyleSheet("padding: 5px 10px;")
+
+        topbar_layout.addStretch()
+
+        reuslts_layout.addWidget(topbar)
+
+        # Tab widget for task views
+        tab_widget = QTabWidget()
+
+        # Add tabs to the tab widget
+        results_tab = QWidget()
+        doc_tree = QWidget()
+
+        # Add content to each tab (simplified here)
+        results_layout = QVBoxLayout(results_tab)
+        self.results_viewer = QTextBrowser()
+        results_layout.addWidget(self.results_viewer)
+        tree_layout = QVBoxLayout(doc_tree)
+        self.tree_viewer = QTextBrowser()
+        tree_layout.addWidget(self.tree_viewer)
+
+        in_progress_layout = QVBoxLayout(doc_tree)
+        in_progress_layout.addWidget(QLabel("Documentation Tree"))
+
+        tab_widget.addTab(results_tab, "Results")
+        tab_widget.addTab(doc_tree, "Documentation Tree")
+        tab_widget.currentChanged.connect(self.res_tab_changed)
+
+        reuslts_layout.addWidget(tab_widget)
+
+        self.content_stack.addWidget(results_container)
+
+    @QtCore.pyqtSlot(int)
+    def res_tab_changed(self, index):
+        if index == 0:
+            gui_support.load_html_content(self.results_viewer, "results/results.html", self.root_dir)
+        elif index == 1:
+            self.load_documentation_tree(self.tree_viewer)
+
+    def create_professor_widget(self):
+        # Projects container with top bar and content area
+        professor_container = QWidget()
+        professor_layout = QVBoxLayout(professor_container)
+        professor_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Top bar for Projects
+        topbar = QFrame()
+        topbar.setStyleSheet("background-color: #f0f0f0; border-bottom: 1px solid #ddd;")
+        topbar_layout = QHBoxLayout(topbar)
+
+        professors_label = QLabel("Professors Data")
+        professors_label.setFont(QFont("Arial", 14, QFont.Bold))
+        topbar_layout.addWidget(professors_label)
+
+        # Add some project-specific action buttons to topbar
+        # new_project_btn = QPushButton("New Project")
+        # new_project_btn.setStyleSheet("background-color: #27ae60; color: white; padding: 5px 10px;")
+
+        # import_btn = QPushButton("Import")
+        # import_btn.setStyleSheet("padding: 5px 10px;")
+
+        # export_btn = QPushButton("Export")
+        # export_btn.setStyleSheet("padding: 5px 10px;")
+
+        topbar_layout.addStretch()
+        # topbar_layout.addWidget(import_btn)
+        # topbar_layout.addWidget(export_btn)
+        # topbar_layout.addWidget(new_project_btn)
+
+        professor_layout.addWidget(topbar)
+
+        # Tab widget for project views
+        tab_widget = QTabWidget()
+
+        # Add tabs to the tab widget
+        professor_view = QWidget()
+        professor_table = QWidget()
+
+        # Add content to each tab (simplified here)
+        # active_layout = QVBoxLayout(professor_view)
+        # active_layout.addWidget(QLabel("Professor List"))
+
+        professor_view_layout = QVBoxLayout(professor_view)
+        # professor_list_layout.addWidget(QLabel("Professor List"))
+        self.professor_view_viewer = QTextBrowser()
+        professor_view_layout.addWidget(self.professor_view_viewer)
+        self.professor_view_viewer.anchorClicked.connect(self.open_link)
+        self.professor_view_viewer.setOpenLinks(False)
+
+        professor_table_layout = QVBoxLayout(professor_table)
+        # professor_details_layout.addWidget(QLabel("Professor Details"))
+        self.professor_table_viewer = QTextBrowser() # TODO: add table
+        professor_table_layout.addWidget(self.professor_table_viewer)
+
+        tab_widget.addTab(professor_view, "View")
+        tab_widget.addTab(professor_table, "Table")
+        tab_widget.currentChanged.connect(self.prof_tab_changed)
+        # tab_widget.addTab(archived_tab, "Archived")
+
+        professor_layout.addWidget(tab_widget)
+
+        self.content_stack.addWidget(professor_container)
+
+    @QtCore.pyqtSlot(int)
+    def prof_tab_changed(self, index):
+        if index == 0:
+            gui_support.load_html_content(self.professor_view_viewer, "results/professors_data.html", self.root_dir)
+        elif index == 1:
+            # TODO: add table
+            print("Table viewer")
+            # gui_support.load_html_content(self.professor_table_viewer, "results/professors_data.html", self.root_dir)
+
+    def create_subject_widget(self):
+        # Settings container with top bar and content area
+        subject_container = QWidget()
+        subject_layout = QVBoxLayout(subject_container)
+        subject_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Top bar for Settings
+        topbar = QFrame()
+        topbar.setStyleSheet("background-color: #f0f0f0; border-bottom: 1px solid #ddd;")
+        topbar_layout = QHBoxLayout(topbar)
+
+        subject_label = QLabel("Subjects Data")
+        subject_label.setFont(QFont("Arial", 14, QFont.Bold))
+        topbar_layout.addWidget(subject_label)
+
+        # Add save and reset buttons
+        # save_btn = QPushButton("Save Changes")
+        # save_btn.setStyleSheet("background-color: #27ae60; color: white; padding: 5px 10px;")
+
+        # reset_btn = QPushButton("Reset Defaults")
+        # reset_btn.setStyleSheet("padding: 5px 10px;")
+
+        topbar_layout.addStretch()
+        # topbar_layout.addWidget(reset_btn)
+        # topbar_layout.addWidget(save_btn)
+
+        subject_layout.addWidget(topbar)
+
+        # Tab widget for settings categories
+        tab_widget = QTabWidget()
+
+        # Add tabs to the tab widget
+        subject_view = QWidget()
+        subject_table = QWidget()
+        # advanced_tab = QWidget()
+
+        # Add content to each tab (simplified here)
+        subject_view_layout = QVBoxLayout(subject_view)
+        # subject_view_layout.addWidget(QLabel("Subjects view"))
+        self.subject_view_viewer = QTextBrowser()
+        subject_view_layout.addWidget(self.subject_view_viewer)
+        self.subject_view_viewer.anchorClicked.connect(self.open_link)
+        self.subject_view_viewer.setOpenLinks(False)
+
+        subject_table_layout = QVBoxLayout(subject_table)
+        # subject_table_layout.addWidget(QLabel("Subjects table"))
+        self.subject_table_viewer = QTextBrowser() # TODO: add table
+        subject_table_layout.addWidget(self.subject_table_viewer)
+
+        # advanced_layout = QVBoxLayout(advanced_tab)
+        # advanced_layout.addWidget(QLabel("Advanced Settings Options"))
+
+        tab_widget.addTab(subject_view, "View")
+        tab_widget.addTab(subject_table, "Table")
+        tab_widget.currentChanged.connect(self.subj_tab_changed)
+        # tab_widget.addTab(advanced_tab, "Advanced")
+
+        subject_layout.addWidget(tab_widget)
+
+        self.content_stack.addWidget(subject_container)
+
+    @QtCore.pyqtSlot(int)
+    def subj_tab_changed(self, index):
+        if index == 0:
+            gui_support.load_html_content(self.subject_view_viewer, "results/subjects_data.html", self.root_dir)
+        elif index == 1:
+            # TODO: add table
+            print("Table viewer")
+
+    def create_explorer_widget(self):
+        # Settings container with top bar and content area
+        explorer_container = QWidget()
+        explorer_layout = QVBoxLayout(explorer_container)
+        explorer_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Top bar for Settings
+        topbar = QFrame()
+        topbar.setStyleSheet("background-color: #f0f0f0; border-bottom: 1px solid #ddd;")
+        topbar_layout = QHBoxLayout(topbar)
+
+        explorer_label = QLabel("File Explorer")
+        explorer_label.setFont(QFont("Arial", 14, QFont.Bold))
+        topbar_layout.addWidget(explorer_label)
+
+        # Add save and reset buttons
+        root_btn = QPushButton("Set Root Directory")
+        root_btn.setStyleSheet("background-color: #2c3e50; color: white; padding: 5px 10px; border: none;")
+        root_btn.clicked.connect(self.set_explorer_root)
+
+        topbar_layout.addStretch()
+        topbar_layout.addWidget(root_btn)
+
+        explorer_layout.addWidget(topbar)
+
+        # Tab widget for settings categories
+        file_view = self.init_explorer()
+
+        explorer_layout.addWidget(file_view)
+
+        self.content_stack.addWidget(explorer_container)
+
+    def show_content(self, index, button):
+        # Update content stack to show the selected content
+        self.content_stack.setCurrentIndex(index)
+
+        # Generate content based on selected tab
+        match button.objectName():
+            case "dashboard_btn":
+                print("Dashboard")
+            case "results_btn":
+                gui_support.load_html_content(self.results_viewer, "results/results.html", self.root_dir)
+            case "professors_btn":
+                gui_support.load_html_content(self.professor_view_viewer, "results/professors_data.html", self.root_dir)
+            case "subjects_btn":
+                gui_support.load_html_content(self.subject_view_viewer, "results/subjects_data.html", self.root_dir)
+            case "explorer_btn":
+                print("Explorer")
+                # self.load_html_content(self.explorer_viewer, "results/explorer.html", self.root_dir)
+
+        # Reset all sidebar button styles
+        for btn_name in ["dashboard_btn", "results_btn", "professors_btn", "subjects_btn", "explorer_btn"]:
+            btn = self.sidebar.findChild(QPushButton, btn_name)
+            btn.setStyleSheet(
+                "QPushButton { background-color: #2c3e50; color: white; text-align: left; padding: 10px; border: none; }"
+            )
+
+        # Set selected button style
+        button.setStyleSheet(
+            "QPushButton { background-color: #3a7ebf; color: white; text-align: left; padding: 10px; border: none; }"
+        )
+
+    @QtCore.pyqtSlot(str)
+    def load_gen_tree(self, gen_tree):
         """
-        Swich between file explorer and different HTML views.
+        Loads the generated documentation tree.
 
         Args:
-            item (str):     Name of the item clicked.
+            gen_tree (str):     Generated documentation tree
         Returns:
             None
         """
-        text = item.text().strip()
-        if text == "File Explorer":
-            self.stack.setCurrentIndex(1)  # Show File Explorer
-            self.current_view = 'File Explorer'
-        elif text in ["Results", ""]:  # Results Panel
-            self.sidebar.setCurrentRow(self.sidebar.currentRow() + 1)  # Move to Documentation Tree
-            self.load_documentation_tree()
-            self.stack.setCurrentIndex(0)  # Show Results Panel
-            self.current_view = 'Results'
-        elif text == "Documentation Tree":
-            self.load_documentation_tree()
-            self.stack.setCurrentIndex(0)  # Show Results Panel
-            self.current_view = 'Documentation Tree'
-        elif text == "Final Results":
-            self.load_html_content("results/results.html")
-            self.stack.setCurrentIndex(0)
-            self.current_view = 'Final Results'
-        elif text == "Professors":
-            self.load_html_content("results/professors_data.html")
-            self.stack.setCurrentIndex(0)
-            self.current_view = 'Professors'
-        elif text == "Subjects":
-            self.load_html_content("results/subjects_data.html")
-            self.stack.setCurrentIndex(0)
-            self.current_view = 'Subjects'
+        self.gen_tree = gen_tree
+        self.load_documentation_tree(self.tree_viewer)
+        self.running_spinner.stop()
 
-    def load_documentation_tree(self):
+    def generate_documentation_tree(self, parent_widget):
+        """
+        Generates the documentation tree, in a separate thread.
+        """
+        self.running_spinner = WaitingSpinner(parent_widget, True, True, Qt.ApplicationModal)
+        self.running_spinner.start()
+        parent_widget.setHtml(f"<h2>Generating documentation tree...</h2><p>Please wait...</p>")
+        self.thread = QtCore.QThread()
+        self.worker = Worker(root_dir=self.root_dir)
+        self.worker.moveToThread(self.thread)
+        self.thread.started.connect(self.worker.run)
+        self.worker.generated_tree.connect(self.thread.quit)
+        self.worker.generated_tree.connect(self.load_gen_tree)
+        self.thread.start()
+
+    def load_documentation_tree(self, parent_widget):
         """
         Loads the documentation tree.
         """
         documentation_structure = self.gen_tree
         if documentation_structure != '':
-            self.html_viewer.setHtml(f"<h2>Documentation structure</h2><pre>{documentation_structure}</pre>")
+            parent_widget.setHtml(f"<h2>Documentation structure</h2><pre>{documentation_structure}</pre>")
         elif not os.path.exists(os.path.join(self.root_dir, Path('tmp/input_files'))):
             documentation_structure = "Documentation tree could not be generated - no input files found."
-            self.html_viewer.setHtml(f"<h2>Documentation structure</h2><p>{documentation_structure}</p>")
+            parent_widget.setHtml(f"<h2>Documentation structure</h2><p>{documentation_structure}</p>")
         else:
-            self.generate_documentation_tree()
+            self.generate_documentation_tree(parent_widget)
 
-    def load_html_content(self, filename, root_dir=''):
+    def open_link(self, link):
         """
-        Loads content from a locally generated HTML file into QTextEdit.
+        Opens data represented by the given link in a new window.
 
         Args:
-            filename (str):     Relative path of the file - relative to the tmp directory.
-            root_dir (str):     Root directory of the file, absolute path.
+            link (str):     Link to the data.
         Returns:
             None
         """
-        file_path = os.path.join(self.root_dir if root_dir == '' else root_dir, Path(f"tmp/{filename}"))
         try:
-            if os.path.exists(file_path):
-                with open(file_path, "r", encoding="utf-8") as file:
-                    html_content = file.read()
-                self.html_viewer.setHtml(html_content)
-            elif filename.endswith('.html') and os.path.exists(os.path.join(self.root_dir if root_dir == '' else root_dir, Path(f"tmp/{filename[:-5]}.json"))):
-                with open(os.path.join(self.root_dir if root_dir == '' else root_dir, Path(f"tmp/{filename[:-5]}.json")), "r", encoding="utf-8") as file:
-                    html_content = json.load(file)
-                self.html_viewer.setHtml(f"<pre>{json.dumps(html_content, indent=4, ensure_ascii=False)}</pre>")
-            elif filename.endswith('.html') and os.path.exists(os.path.join(self.root_dir if root_dir == '' else root_dir, Path(f"tmp/{filename.split(os.sep if re.search(re.escape(os.sep), filename) else '/')[-1][:-5]}.json"))):
-                with open(os.path.join(self.root_dir if root_dir == '' else root_dir, Path(f"tmp/{filename.split(os.sep if re.search(re.escape(os.sep), filename) else '/')[-1][:-5]}.json")), "r", encoding="utf-8") as file:
-                    html_content = json.load(file)
-            else:
-                self.html_viewer.setHtml(f"<h2>No data found</h2><p>{filename} is missing.</p>")
+            data_file = Path('tmp/professors_data.json')
+            with open(os.path.join(self.root_dir, data_file), "r", encoding="utf-8") as file:
+                data = json.load(file)
+            try:
+                table_data = [i for i in data if 'type' in i.keys() and i['type'] == 'prof_tables'][0]['data']
+            except Exception as e:
+                table_data = []
+            for item in table_data:
+                if str(item['table_key']) != link.toString():
+                    continue
+                subj_html = util.generate_prof_subject_html(root_dir=self.root_dir, subjects_data=item)
+                self.new_window = TableWindow(dir_name=os.path.dirname(__file__), table_html=subj_html)
+                self.new_window.setWindowTitle(f"Professor: {item['name']}")
+                self.new_window.show()
+                break
         except Exception as e:
             print(f'Error loading file:\n    {e}')
-            self.html_viewer.setHtml(f"<h2>Error loading file</h2><p>{filename} is missing.</p>")
+            load_dialog = gui_support.PopupDialog("Error loading data", f"Error loading data. Table data could not be loaded.", self)
+            load_dialog.setModal(True)
+            load_dialog.exec_()
+            return
 
-    def navigate_to_input_path(self):
-        """
-        Navigate to manually entered path.
-        """
-        path = self.path_input.text()
-        if os.path.exists(path):
-            self.file_view.setRootIndex(self.model.index(path))
+    def init_explorer(self):
+        self.model = QFileSystemModel()
+        self.model.setRootPath(os.path.expanduser("~"))
+        self.file_view = QTreeView()
+        self.file_view.setModel(self.model)
+        if not os.path.exists(os.path.join(os.getcwd(), Path('tmp/input_files'))):
+            self.file_view.setRootIndex(self.model.index(os.path.expanduser("~")))
+        else:
+            self.file_view.setRootIndex(self.model.index(os.path.join(os.getcwd(), Path('tmp/input_files'))))
+        self.file_view.doubleClicked.connect(self.open_item)
+        return self.file_view
 
-    def browse_for_folder(self):
-        """
-        Open a dialog to select a folder.
-        """
-        folder_path = QFileDialog.getExistingDirectory(self, "Select Folder", os.path.expanduser("~"))
-        if folder_path:
-            self.path_input.setText(folder_path)
-            self.file_view.setRootIndex(self.model.index(folder_path))
+    def set_explorer_root(self):
+        root_dir = QFileDialog.getExistingDirectory(self, "Select Folder", os.path.expanduser("~"))
+        if root_dir:
+            self.file_view.setRootIndex(self.model.index(root_dir))
 
     def open_item(self, index):
         """
@@ -224,73 +554,13 @@ class FileExplorer(QMainWindow):
         path = self.model.filePath(index)
         if os.path.isdir(path):
             self.file_view.setRootIndex(self.model.index(path))
-            self.path_input.setText(path)
         else:
-            os.startfile(path)  # Opens file with default application
-
-    @QtCore.pyqtSlot(str)
-    def load_gen_tree(self, gen_tree):
-        """
-        Loads the generated documentation tree.
-
-        Args:
-            gen_tree (str):     Generated documentation tree
-        Returns:
-            None
-        """
-        self.gen_tree = gen_tree
-        self.load_documentation_tree()
-        self.running_spinner.stop()
-
-    def generate_documentation_tree(self):
-        """
-        Generates the documentation tree, in a separate thread.
-        """
-        self.running_spinner.start()
-        self.html_viewer.setHtml(f"<h2>Generating documentation tree...</h2><p>Please wait...</p>")
-        self.thread = QtCore.QThread()
-        self.worker = Worker(root_dir=self.root_dir)
-        self.worker.moveToThread(self.thread)
-        self.thread.started.connect(self.worker.run)
-        self.worker.generated_tree.connect(self.thread.quit)
-        self.worker.generated_tree.connect(self.load_gen_tree)
-        self.thread.start()
-
-    def open_link(self, link):
-        """
-        Opens data represented by the given link in a new window.
-
-        Args:
-            link (str):     Link to the data.
-        Returns:
-            None
-        """
-        try:
-            if self.current_view in ['Professors', 'Subjects']:
-                data_file = Path('tmp/professors_data.json')
-                with open(os.path.join(self.root_dir, data_file), "r", encoding="utf-8") as file:
-                    data = json.load(file)
-                try:
-                    table_data = [i for i in data if 'type' in i.keys() and i['type'] == 'prof_tables'][0]['data']
-                except Exception as e:
-                    table_data = []
-                for item in table_data:
-                    if str(item['table_key']) != link.toString():
-                        continue
-                    subj_html = util.generate_prof_subject_html(root_dir=self.root_dir, subjects_data=item)
-                    self.new_window = TableWindow(dir_name=self.dir_name, table_html=subj_html)
-                    self.new_window.setWindowTitle(f"Professor: {item['name']}")
-                    self.new_window.show()
-                    break
-            elif self.current_view == 'Final Results':
-                data_file = Path('tmp/results/results.json')
-                with open(os.path.join(self.root_dir, data_file), "r", encoding="utf-8") as file:
-                    data = json.load(file)
-                # No links in final results view
-        except Exception as e:
-            print(f'Error loading file:\n    {e}')
-            self.html_viewer.setHtml(f"<h2>Error loading data</h2><p>{data_file} is missing or invalid.</p>")
-            return
+            # os.startfile(path)  # Opens file with default application
+            if sys.platform == "Windows":
+                os.startfile(path)
+            else:
+                opener = "open" if sys.platform == "darwin" else "xdg-open"
+                subprocess.call([opener, path])
 
 class Worker(QtCore.QObject):
     """
@@ -316,7 +586,7 @@ class TableWindow(QWidget):
         super(TableWindow, self).__init__(parent)
         self.setGeometry(250, 150, 1000, 600)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(os.path.join(dir_name, Path("resources/raf_logo_win.png"))), QtGui.QIcon.Normal, QtGui.QIcon.On)
+        icon.addPixmap(QtGui.QPixmap(os.path.join(dir_name if dir_name != '' else os.path.dirname(__file__), Path("resources/raf_logo_win.png"))), QtGui.QIcon.Normal, QtGui.QIcon.On)
         self.setWindowIcon(icon)
         self.trayIcon = QSystemTrayIcon(self)
         self.trayIcon.setIcon(icon)
@@ -340,4 +610,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = FileExplorer()
     window.show()
-    sys.exit(app.exec())
+    sys.exit(app.exec_())
