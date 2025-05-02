@@ -299,7 +299,9 @@ class FileExplorer(QMainWindow):
 
         professor_table_layout = QVBoxLayout(professor_table)
         # professor_details_layout.addWidget(QLabel("Professor Details"))
-        self.professor_table_viewer = QTextBrowser() # TODO: add table
+        # self.professor_table_viewer = QTextBrowser()
+        self.professor_table_viewer = gui_support.DatabaseTableWidget()
+        self.professor_table_viewer.set_table_data(os.path.join(self.root_dir, Path('tmp/acreditation.db')), "professors_table")
         professor_table_layout.addWidget(self.professor_table_viewer)
 
         tab_widget.addTab(professor_view, "View")
@@ -366,7 +368,9 @@ class FileExplorer(QMainWindow):
 
         subject_table_layout = QVBoxLayout(subject_table)
         # subject_table_layout.addWidget(QLabel("Subjects table"))
-        self.subject_table_viewer = QTextBrowser() # TODO: add table
+        self.subject_table_viewer = QTextBrowser()
+        self.subject_table_viewer = gui_support.DatabaseTableWidget()
+        self.subject_table_viewer.set_table_data(os.path.join(self.root_dir, Path('tmp/acreditation.db')), "subjects_table")
         subject_table_layout.addWidget(self.subject_table_viewer)
 
         # advanced_layout = QVBoxLayout(advanced_tab)

@@ -1,10 +1,10 @@
 """
 GUI application for AutoCreditation
 """
-
 import json
 import os
 from pathlib import Path
+import shutil
 import sys
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
@@ -21,6 +21,8 @@ import src.util as util
 import src.gui.main_worker as main_worker
 import src.gui.gui_explorer as gui_explorer
 import src.gui.gui_support as gui_support
+import src.db_support as db_support
+import src.verify_data as verify_data
 
 dirName = os.path.dirname(__file__)
 
@@ -91,7 +93,7 @@ class MainWindow(QMainWindow):
 
         # Set default to Results
         self.content_stack.setCurrentIndex(0)
-        self.showMaximized()
+        # self.showMaximized()
 
     def create_top_panel(self):
         # Create top panel frame
@@ -277,19 +279,41 @@ class MainWindow(QMainWindow):
         general_layout.setContentsMargins(20, 20, 20, 20)
         general_layout.setSpacing(15)
 
+        save_export_layout = QHBoxLayout()
+
         self.save_results_button = QPushButton("Save Results")
         self.save_results_button.setIcon(gui_support.create_icon('exclamation'))
         self.save_results_button.setToolTip("Save results to a .json file.")
         self.save_results_button.setMinimumWidth(200)
         self.save_results_button.clicked.connect(self.save_data)
-        general_layout.addWidget(self.save_results_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+        save_export_layout.addWidget(self.save_results_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        self.import_databese_button = QPushButton("Export Database")
+        self.import_databese_button.setIcon(gui_support.create_icon('database'))
+        self.import_databese_button.setToolTip("Import database from a .db file.")
+        self.import_databese_button.setMinimumWidth(200)
+        self.import_databese_button.clicked.connect(self.export_database)
+        save_export_layout.addWidget(self.import_databese_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        general_layout.addLayout(save_export_layout)
+
+        load_import_layout = QHBoxLayout()
 
         self.load_results_button = QPushButton("Load Results")
         self.load_results_button.setIcon(gui_support.create_icon('floppy'))
         self.load_results_button.setToolTip("Load results from previous run.")
         self.load_results_button.setMinimumWidth(200)
         self.load_results_button.clicked.connect(self.load_data)
-        general_layout.addWidget(self.load_results_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+        load_import_layout.addWidget(self.load_results_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        self.import_databese_button = QPushButton("Import Database")
+        self.import_databese_button.setIcon(gui_support.create_icon('database'))
+        self.import_databese_button.setToolTip("Import database from a .db file.")
+        self.import_databese_button.setMinimumWidth(200)
+        self.import_databese_button.clicked.connect(self.import_database)
+        load_import_layout.addWidget(self.import_databese_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+
+        general_layout.addLayout(load_import_layout)
 
         self.clean_tmp_checkbox = QCheckBox('Clean /tmp directory')
         self.clean_tmp_checkbox.setChecked(True)
@@ -635,10 +659,56 @@ class MainWindow(QMainWindow):
             util.save_data(root_dir=self.root_dir, data=all_data['results'], save_dir='tmp/results', data_name='results')
             util.save_data(root_dir=self.root_dir, data=all_data['professors'], save_dir='tmp', data_name='professors_data')
             util.save_data(root_dir=self.root_dir, data=all_data['subjects'], save_dir='tmp', data_name='subjects_data')
+            db_support.json_to_db(os.path.join(self.root_dir, Path('tmp/professors_data.json')),
+                                  os.path.join(self.root_dir, Path('tmp/subjects_data.json')),
+                                  os.path.join(self.root_dir, Path('tmp/results/results.json')),
+                                  os.path.join(self.root_dir, Path('tmp/acreditation.db')))
             self.results_button.setEnabled(True)
             loaded_dialog = gui_support.PopupDialog(f"Data from {file_path} loaded.", "Data loaded", self)
             loaded_dialog.setModal(True)
             loaded_dialog.exec_()
+            self.run_button.setEnabled(True)
+
+    def import_database(self):
+        """
+        Import database from a .db file.
+        """
+        file_path = QFileDialog.getOpenFileName(self, "Import database", os.path.expanduser("~"))
+        file_path = file_path[0] if type(file_path) in [tuple, list] and file_path[0] != '' else file_path if type(file_path) == str else ''
+        if not file_path.endswith('.db') and not os.path.exists(file_path) and file_path != '':
+            file_path = ''
+            error_dialog = gui_support.PopupDialog("File must be a .db file.", "Invalid file selected.", self)
+            error_dialog.setModal(True)
+            error_dialog.exec_()
+        if file_path != '':
+            os.makedirs(os.path.join(self.root_dir, Path('tmp')), exist_ok=True)
+            shutil.copyfile(file_path, os.path.join(self.root_dir, Path('tmp/acreditation.db')))
+            db_support.db_to_json(os.path.join(self.root_dir, Path('tmp/acreditation.db')),
+                                  os.path.join(self.root_dir, Path('tmp/professors_data.json')),
+                                  os.path.join(self.root_dir, Path('tmp/subjects_data.json')),
+                                  os.path.join(self.root_dir, Path('tmp/results/results.json')))
+            self.results_button.setEnabled(True)
+            loaded_dialog = gui_support.PopupDialog(f"Database from {file_path} imported.", "Database imported", self)
+            loaded_dialog.setModal(True)
+            loaded_dialog.exec_()
+            self.run_button.setEnabled(True)
+
+    def export_database(self):
+        """
+        Export database to a .db file.
+        """
+        file_path = QFileDialog.getSaveFileName(self, "Export database", os.path.expanduser("~"), filter="*.db")
+        file_path = file_path[0] if type(file_path) in [tuple, list] and file_path[0] != '' else file_path if type(file_path) == str else ''
+        if not file_path.endswith('.db') and not os.path.exists(file_path) and file_path != '':
+            file_path = ''
+            error_dialog = gui_support.PopupDialog("File must be a .db file.", "Invalid file selected.", self)
+            error_dialog.setModal(True)
+            error_dialog.exec_()
+        if file_path != '':
+            shutil.copyfile(os.path.join(self.root_dir, Path('tmp/acreditation.db')), file_path)
+            saved_dialog = gui_support.PopupDialog(f"Database exported to {file_path}.", "Database exported", self)
+            saved_dialog.setModal(True)
+            saved_dialog.exec_()
 
     @QtCore.pyqtSlot(dict)
     def finished_run(self):
