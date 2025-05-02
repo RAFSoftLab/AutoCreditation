@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import re
+import sys
 import ujson as json
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
 import PyQt5.QtGui as QtGui
@@ -103,3 +104,240 @@ def create_icon(icon_name):
     icon = QtGui.QIcon()
     icon.addPixmap(QtGui.QPixmap(os.path.join(os.path.dirname(__file__), Path(f'resources/icons/{icon_name}.png'))), QtGui.QIcon.Normal, QtGui.QIcon.On)
     return icon
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+#                                           Elements                                            #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #import sys
+from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
+                        QLineEdit, QComboBox, QPushButton, QTableView)
+from PyQt5.QtCore import Qt, QSortFilterProxyModel, QRegExp
+from PyQt5.QtSql import QSqlQueryModel, QSqlQuery, QSqlDatabase
+
+def connect_to_database(db_path, connection_name="default_connection"):
+    """
+    Middleware function to establish a database connection.
+
+    Args:
+        db_path (str): Path to the database file
+        connection_name (str): Unique name for the database connection
+
+    Returns:
+        bool: True if connection was successful, False otherwise
+    """
+    # Check if connection with this name already exists
+    if connection_name in QSqlDatabase.connectionNames():
+        # Remove existing connection
+        QSqlDatabase.removeDatabase(connection_name)
+
+    # Create and configure the database connection
+    db = QSqlDatabase.addDatabase("QSQLITE", connection_name)
+    db.setDatabaseName(db_path)
+
+    # Open the connection and return status
+    success = db.open()
+    if not success:
+        print(f"Failed to connect to database: {db.lastError().text()}")
+
+    return success
+
+class CustomProxyModel(QSortFilterProxyModel):
+    """Custom proxy model to filter on multiple columns"""
+    def filterAcceptsRow(self, source_row, source_parent):
+        if self.filterKeyColumn() == -1:  # "All Columns" is selected
+            # Get the filter string
+            regexp = self.filterRegExp()
+
+            # Check each column in the row
+            for column in range(self.sourceModel().columnCount()):
+                # Get the data for this cell
+                index = self.sourceModel().index(source_row, column, source_parent)
+                if index.isValid():
+                    data = self.sourceModel().data(index)
+                    if data is not None and regexp.indexIn(str(data)) != -1:
+                        return True
+            return False
+        else:
+            # Use the default implementation for filtering a specific column
+            return super().filterAcceptsRow(source_row, source_parent)
+
+class DatabaseTableWidget(QWidget):
+    def __init__(self, parent=None):
+        """
+        Widget to display database table with search functionality.
+
+        Args:
+            parent: Parent widget
+        """
+        super().__init__(parent)
+        self.table_name = None
+        self.connection_name = None
+
+        # Set up the UI
+        self.init_ui()
+
+    def init_ui(self):
+        # Main layout
+        layout = QVBoxLayout(self)
+
+        # Search section
+        search_layout = QHBoxLayout()
+
+        # Search label
+        search_label = QLabel("Search:")
+        search_layout.addWidget(search_label)
+
+        # Search input
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("Enter search text...")
+        self.search_input.textChanged.connect(self.filter_table)
+        search_layout.addWidget(self.search_input)
+
+        # Column selector for search
+        self.column_combo = QComboBox()
+        self.column_combo.addItem("All Columns")  # Default option
+        self.column_combo.currentIndexChanged.connect(self.filter_table)
+        search_layout.addWidget(self.column_combo)
+
+        # Clear search button
+        clear_button = QPushButton("Clear")
+        clear_button.clicked.connect(self.clear_search)
+        search_layout.addWidget(clear_button)
+
+        layout.addLayout(search_layout)
+
+        # Table view
+        self.table_view = QTableView()
+        self.table_view.setSortingEnabled(True)
+        self.table_view.setAlternatingRowColors(True)
+        self.table_view.setSelectionBehavior(QTableView.SelectRows)
+        layout.addWidget(self.table_view)
+
+        # Initialize the proxy model
+        self.proxy_model = CustomProxyModel()  # Use our custom proxy model
+        self.proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
+
+        # Create the source model
+        self.source_model = QSqlQueryModel()
+
+    def set_table_data(self, db_path, table_name, connection_name="default_connection"):
+        """
+        Middleware function to connect to a database and load a specific table.
+
+        Args:
+            db_path (str): Path to the database file
+            table_name (str): Name of the table to display
+            connection_name (str): Name for the database connection
+
+        Returns:
+            bool: True if data was loaded successfully, False otherwise
+        """
+        # Store the table and connection information
+        self.table_name = table_name
+        self.connection_name = connection_name
+
+        # Connect to the database
+        connection_success = connect_to_database(db_path, connection_name)
+        if not connection_success:
+            return False
+
+        # Load the table data
+        return self.load_table_data()
+
+    def load_table_data(self):
+        """Load data from the specified table into the table view"""
+        if not self.table_name or not self.connection_name:
+            print("Table name or connection name not set")
+            return False
+
+        # Get the database connection
+        db = QSqlDatabase.database(self.connection_name)
+        if not db.isValid():
+            print(f"Invalid database connection: {self.connection_name}")
+            return False
+
+        # Create a query using the specific connection
+        query = QSqlQuery(db)
+        query_success = query.exec_(f"SELECT * FROM {self.table_name}")
+
+        if not query_success:
+            print(f"Query error: {query.lastError().text()}")
+            return False
+
+        # Set the query to the model
+        self.source_model.setQuery(query)
+
+        # Check if query was successful
+        if self.source_model.lastError().isValid():
+            print(f"Database error: {self.source_model.lastError().text()}")
+            return False
+
+        # Populate the column combo box with column names
+        self.column_combo.clear()
+        self.column_combo.addItem("All Columns")
+
+        for i in range(self.source_model.columnCount()):
+            column_name = self.source_model.headerData(i, Qt.Horizontal)
+            self.column_combo.addItem(column_name)
+
+        # Set up the proxy model
+        self.proxy_model.setSourceModel(self.source_model)
+
+        # Set the model for the table view
+        self.table_view.setModel(self.proxy_model)
+
+        # Adjust column widths
+        self.table_view.resizeColumnsToContents()
+
+        return True
+
+    def filter_table(self):
+        """Filter the table based on search text and selected column"""
+        search_text = self.search_input.text()
+
+        # Get the selected column index (0 means "All Columns")
+        column_index = self.column_combo.currentIndex() - 1  # -1 because "All Columns" is at index 0
+
+        # Set the filter on the proxy model
+        if column_index >= 0:  # Specific column
+            self.proxy_model.setFilterKeyColumn(column_index)
+        else:  # All columns
+            # We need to implement custom filtering for "All Columns"
+            self.proxy_model.setFilterKeyColumn(-1)  # -1 means use custom implementation
+
+        # Set the filter pattern
+        self.proxy_model.setFilterRegExp(QRegExp(search_text, Qt.CaseInsensitive))
+
+    def clear_search(self):
+        """Clear the search input"""
+        self.search_input.clear()
+        self.column_combo.setCurrentIndex(0)  # Reset to "All Columns"
+
+    def refresh_data(self):
+        """Refresh the table data"""
+        if self.table_name and self.connection_name:
+            self.load_table_data()
+
+    def get_selected_row_data(self):
+        """
+        Get data from the currently selected row
+
+        Returns:
+            dict: Dictionary of column names and values, or None if no selection
+        """
+        selected_indexes = self.table_view.selectionModel().selectedRows()
+        if not selected_indexes:
+            return None
+
+        # Get the first selected row
+        proxy_index = selected_indexes[0]
+        source_index = self.proxy_model.mapToSource(proxy_index)
+        source_row = source_index.row()
+
+        # Collect data from all columns
+        row_data = {}
+        for col in range(self.source_model.columnCount()):
+            column_name = self.source_model.headerData(col, Qt.Horizontal)
+            value = self.source_model.data(self.source_model.index(source_row, col))
+            row_data[column_name] = value
+
+        return row_data

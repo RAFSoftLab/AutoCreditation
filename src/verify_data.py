@@ -1,8 +1,6 @@
 """
 Verification of data in the documentation files.
 """
-
-
 import json
 import os
 import pandas as pd

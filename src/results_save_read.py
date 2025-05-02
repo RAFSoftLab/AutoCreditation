@@ -1,11 +1,11 @@
 """
 Saving result to a file and loading saved results.
 """
-
-
 import json
 import os
 from pathlib import Path
+
+import src.db_support as db_support
 
 
 def save_results(root_dir, results):
@@ -32,6 +32,10 @@ def save_results(root_dir, results):
     new_results = {**old_results, **results} if old_results != {} else results
     with open(os.path.join(save_dir, Path('results.json')), 'w', encoding='utf-8') as f:
         json.dump(new_results, f, indent=4)
+    # Save as database
+    db_support.json_to_db(os.path.join(save_dir, Path('professors_data.json')), os.path.join(save_dir, Path('subjects_data.json')), os.path.join(save_dir, Path('acreditation.db')))
+    print(f'Saved results to {os.path.join(root_dir, save_dir, Path("results.json"))}')
+    print(f'Saved database to {os.path.join(root_dir, save_dir, Path("acreditation.db"))}')
 
 def load_results(root_dir, save_dir='', abs_path=''):
     """
