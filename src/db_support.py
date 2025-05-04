@@ -193,7 +193,7 @@ class SubjectDBConverter:
     proper relational structure.
     """
 
-    def __init__(self, db_path: str = "professors.db"):
+    def __init__(self, db_path: str = "tmp/acreditation.db"):
         """
         Initialize the converter with path to the target database
 
@@ -346,7 +346,7 @@ class ResultsDBConverter:
     Converts results data from JSON format into a SQLite database
     """
 
-    def __init__(self, db_path: str = "professors.db"):
+    def __init__(self, db_path: str = "tmp/acreditation.db"):
         """
         Initialize the converter with path to the target database
 
@@ -438,7 +438,7 @@ class ProfessorDBToJSON:
     Converts SQLite database with professor data back to the original JSON format
     """
 
-    def __init__(self, db_path: str = "professors.db"):
+    def __init__(self, db_path: str = "tmp/acreditation.db"):
         """
         Initialize the converter with path to the source database
 
@@ -793,7 +793,7 @@ class ProfessorDBToJSON:
 
 
 def json_to_db(professors_json_path: str = None, subjects_json_path: str = None,
-               results_json_path: str = None, db_path: str = "professors.db") -> None:
+               results_json_path: str = None, db_path: str = "tmp/acreditation.db") -> None:
     """
     Helper function to convert JSON to database
 
@@ -803,6 +803,9 @@ def json_to_db(professors_json_path: str = None, subjects_json_path: str = None,
         results_json_path: Path to the JSON file containing results data
         db_path: Path to the SQLite database
     """
+    if not os.path.exists(os.path.dirname(db_path)):
+        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+
     if professors_json_path:
         prof_converter = ProfessorDBConverter(db_path)
         prof_converter.convert(professors_json_path)
@@ -827,6 +830,12 @@ def db_to_json(db_path: str, professors_output_path: str,
         subjects_output_path: Path to save the subjects output JSON file (optional)
         results_output_path: Path to save the results output JSON file (optional)
     """
+    if not os.path.exists(os.path.dirname(professors_output_path)):
+        os.makedirs(os.path.dirname(professors_output_path), exist_ok=True)
+    if not os.path.exists(os.path.dirname(subjects_output_path)):
+        os.makedirs(os.path.dirname(subjects_output_path), exist_ok=True)
+    if not os.path.exists(os.path.dirname(results_output_path)):
+        os.makedirs(os.path.dirname(results_output_path), exist_ok=True)
     converter = ProfessorDBToJSON(db_path)
     converter.convert_to_json(professors_output_path, subjects_output_path, results_output_path)
 

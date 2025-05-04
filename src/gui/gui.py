@@ -26,6 +26,11 @@ import src.verify_data as verify_data
 
 dirName = os.path.dirname(__file__)
 
+if sys.platform.startswith('win'):
+    import ctypes
+    myappid = 'mycompany.myproduct.subproduct.version' # arbitrary string
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+
 class MainWindow(QMainWindow):
     """
     Main window of the GUI application
