@@ -49,17 +49,19 @@ class Worker(QObject):
         print("Running main script...")
         self.progress_bar_visibility.emit(True)
 
-        if 'use_loaded_data' in self.processing_options.keys() and self.processing_options['use_loaded_data'] == True:
+        loaded_data_found = True if os.path.exists(os.path.join(self.root_dir, Path('tmp/professors_data.json'))) and os.path.exists(os.path.join(self.root_dir, Path('tmp/subjects_data.json'))) and os.path.exists(os.path.join(self.root_dir, Path('tmp/results/results.json'))) else False
+
+        if 'use_loaded_data' in self.processing_options.keys() and self.processing_options['use_loaded_data'] == True and loaded_data_found == True:
             self.updated_results.emit({'run_dir': f"Verification for loaded documentation data"})
         else:
             self.updated_results.emit({'run_dir': f"Verification for documents in root directory: {self.doc_dir}"})
 
-        if self.clean_tmp == True and ('use_loaded_data' not in self.processing_options.keys() or self.processing_options['use_loaded_data'] == False):
+        if self.clean_tmp == True and ('use_loaded_data' not in self.processing_options.keys() or self.processing_options['use_loaded_data'] == False or loaded_data_found == False):
             self.progress_bar_value.emit(0, 'Clearing /tmp directory...')
             util.clear_tmp_dir(root_dir=self.root_dir)
             print('Cleared /tmp directory')
 
-        if 'use_loaded_data' not in self.processing_options.keys() or self.processing_options['use_loaded_data'] == False:
+        if 'use_loaded_data' not in self.processing_options.keys() or self.processing_options['use_loaded_data'] == False or loaded_data_found == False:
             self.progress_bar_value.emit(0 if self.clean_tmp == False else 2, 'Copying documentation files and reading directory structure...')
             # Directory reading
             doc_structure, dir_tree, self.files_dir = directory_reading.copy_read_doc_dir(root_dir=self.root_dir, documentation_dir=self.doc_dir, clear_dir=self.clean_tmp, overwrite=True, load_struct=True, convert_names_to_latin=True)
@@ -231,11 +233,15 @@ class Worker(QObject):
             self.progress_bar_value.emit(20, 'Loading extracted documentation data...')
             if not os.path.exists(os.path.join(self.root_dir, Path('tmp/professors_data.json'))):
                 self.updated_results.emit({'Professors data not found': 'Not found'})
+                self.progress_bar_visibility.emit(False)
+                self.finished.emit(self.resultData)
                 return
             self.updated_results.emit({'Professors data loaded from file': util.load_data(root_dir=self.root_dir, abs_path=os.path.join(self.root_dir, Path('tmp/professors_data.json')))})
             professors_data = util.load_data(root_dir=self.root_dir, abs_path=os.path.join(self.root_dir, Path('tmp/professors_data.json')))
             if not os.path.exists(os.path.join(self.root_dir, Path('tmp/subjects_data.json'))):
                 self.updated_results.emit({'Subjects data not found': 'Not found'})
+                self.progress_bar_visibility.emit(False)
+                self.finished.emit(self.resultData)
                 return
             self.updated_results.emit({'Subjects data loaded from file': util.load_data(root_dir=self.root_dir, abs_path=os.path.join(self.root_dir, Path('tmp/subjects_data.json')))})
             subjects_data = util.load_data(root_dir=self.root_dir, abs_path=os.path.join(self.root_dir, Path('tmp/subjects_data.json')))

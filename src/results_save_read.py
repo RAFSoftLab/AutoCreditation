@@ -19,22 +19,23 @@ def save_results(root_dir, results):
     Returns:
         None
     """
-    save_dir = os.path.join(root_dir, Path('tmp/results'))
+    save_dir = os.path.join(root_dir, Path('tmp'))
+    save_dir_results = os.path.join(root_dir, Path('tmp/results'))
     old_results = {}
     new_results = {}
-    print(f'Saving results to {os.path.join(root_dir, save_dir, Path("results.json"))}')
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir, exist_ok=True)
+    print(f'Saving results to {os.path.join(root_dir, save_dir_results, Path("results.json"))}')
+    if not os.path.exists(save_dir_results):
+        os.makedirs(save_dir_results, exist_ok=True)
     else:
-        if os.path.exists(os.path.join(save_dir, Path('results.json'))):
-           with open(os.path.join(save_dir, Path('results.json')), 'r', encoding='utf-8') as f:
+        if os.path.exists(os.path.join(save_dir_results, Path('results.json'))):
+           with open(os.path.join(save_dir_results, Path('results.json')), 'r', encoding='utf-8') as f:
                old_results = json.load(f)
     new_results = {**old_results, **results} if old_results != {} else results
-    with open(os.path.join(save_dir, Path('results.json')), 'w', encoding='utf-8') as f:
+    with open(os.path.join(save_dir_results, Path('results.json')), 'w', encoding='utf-8') as f:
         json.dump(new_results, f, indent=4)
     # Save as database
-    db_support.json_to_db(os.path.join(save_dir, Path('professors_data.json')), os.path.join(save_dir, Path('subjects_data.json')), os.path.join(save_dir, Path('acreditation.db')))
-    print(f'Saved results to {os.path.join(root_dir, save_dir, Path("results.json"))}')
+    db_support.json_to_db(os.path.join(save_dir, Path('professors_data.json')), os.path.join(save_dir, Path('subjects_data.json')), os.path.join(save_dir_results, Path('results.json')), os.path.join(save_dir, Path('acreditation.db')))
+    print(f'Saved results to {os.path.join(root_dir, save_dir_results, Path("results.json"))}')
     print(f'Saved database to {os.path.join(root_dir, save_dir, Path("acreditation.db"))}')
 
 def load_results(root_dir, save_dir='', abs_path=''):
