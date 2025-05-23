@@ -211,3 +211,7 @@ Automated reading and checkup of university acreditation documentation files.
     - All subjects of a professor preview window
     - Data/.JSON saving and loading
     - Loading previous results and data, saving current results and data
+  - 0.1.0 - Additional data checks
+    - Testing if professors have at least minimum number of subjects (set in gui)
+    - Testing if class points sum is equal to 100 (set in gui) for subjects
+    - Moved pywin32 package installation to requirements.txt as conditional

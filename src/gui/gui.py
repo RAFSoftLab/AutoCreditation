@@ -41,7 +41,7 @@ class MainWindow(QMainWindow):
         doc_dir = ''
         root_dir = root_dir
         print(f"Application root directory: {root_dir}")
-        util.install_office_package()
+        # util.install_office_package() Package moced to requirements.txt as conditional
         self.setWindowTitle("AutoCreditation")
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(os.path.join(dirName, Path("resources/raf_logo_win.png"))), QtGui.QIcon.Normal, QtGui.QIcon.On)
@@ -604,7 +604,7 @@ class MainWindow(QMainWindow):
         """
         Generates results HTML file and opens explorer
         """
-        gui_support.generate_html(self.root_dir)
+        gui_support.generate_html(self.root_dir, params={'check_subj_points_sum': self.processing_options['exam_points_sum'], 'min_subj_per_prof': self.processing_options['prof_subj_min_num']})
         gui_support.generate_prof_html(self.root_dir)
         gui_support.generate_subjects_html(self.root_dir)
         self.open_explorer()
@@ -748,8 +748,6 @@ class MainWindow(QMainWindow):
             self.update_processing_options('prof_subj_min_num', int(self.prof_subj_min_num.text()))
         self.update_processing_options('prof_subj_comp', self.prof_subj_comp.isChecked())
         self.update_processing_options('exam_points_sum', self.exam_points_sum.isChecked())
-
-        # TODO: processing options logic
 
         self.thread = QThread()
         self.worker = main_worker.Worker()

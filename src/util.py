@@ -23,6 +23,7 @@ import pandas as pd
 import src.util as util
 import src.cyrillyc_to_latin as cyrillic_to_latin
 import src.results_save_read as results_save_read
+import src.verify_data as verify_data
 
 
 def install_office_package():
@@ -580,9 +581,14 @@ def update_hyperlinks(root_dir, new_hyperlinks):
         os.makedirs(os.path.join(root_dir, Path('tmp')))
     save_data(root_dir=root_dir, data=new_hyperlinks, save_dir='tmp', data_name='found_file_links')
 
-def generate_res_html(root_dir=''):
+def generate_res_html(root_dir='', check_subj_points_sum=False, min_subj_per_prof=None):
     """
     Generates HTML files from the results.
+
+    Args:
+        root_dir (str):                 Root directory of the project, absolute path
+        check_subj_points_sum (bool):   (Optional) If True, the sum of class points in the subject table is checked. Default is False
+        min_subj_per_prof (int):        (Optional) Minimum number of subjects per professor. Default is None - no check
     """
     # self.root_dir = root_dir if root_dir != '' else self.root_dir
     print("Generating HTML files...")
@@ -654,6 +660,42 @@ def generate_res_html(root_dir=''):
                         subj_to_prof_filt_not_found += f"{str(item)}<hr>"
                 subj_to_prof_filt_not_found = f"{subj_to_prof_filt_not_found}"
             results_html += f'<h2>Subjects to professors not found</h2>\n<div>\n    {subj_to_prof_filt_not_found}\n</div>\n'
+        if min_subj_per_prof is not None and os.path.exists(os.path.join(root_dir, Path('tmp/professors_data.json'))):
+            with open(os.path.join(root_dir, Path('tmp/professors_data.json')), "r", encoding="utf-8") as file:
+                prof_data = json.load(file)
+            prof_tables = [i for i in prof_data if 'type' in i.keys() and i['type'] == 'prof_tables']
+            prof_tables = prof_tables[0]['data'] if len(prof_tables) > 0 else []
+            profs_with_invalid_subjs = []
+            for prof_item in prof_tables:
+                if 'subjects' in prof_item.keys() and prof_item['subjects'] != []:
+                    if len(prof_item['subjects']) < min_subj_per_prof:
+                        profs_with_invalid_subjs.append(prof_item['name'] if 'name' in prof_item.keys() else '')
+            if len(profs_with_invalid_subjs) > 0:
+                results_sum = ''
+                for item in profs_with_invalid_subjs:
+                    results_sum += f'    <li>{item}</li>'
+                results_sum = f'<ul>List of professors with invalid number of subjects:\n{results_sum}</ul>'
+            else:
+                results_sum = '<p>All professors have valid number of subjects.</p>'
+            results_html += f'<h2>Professors with invalid number of subjects</h2>\n<div>\n{results_sum}\n</div>\n'
+        if check_subj_points_sum == True and os.path.exists(os.path.join(root_dir, Path('tmp/subjects_data.json'))):
+            with open(os.path.join(root_dir, Path('tmp/subjects_data.json')), "r", encoding="utf-8") as file:
+                subj_data = json.load(file)
+            invalid_sum_subjects = []
+            for subj_item in subj_data:
+                if 'type' in subj_item.keys() and subj_item['type'] == 'subj_tables':
+                    for subj_table in subj_item['data']:
+                        if 'class_points' in subj_table.keys() and subj_table['class_points'] != {}:
+                            if not verify_data.test_class_points_sum(subject_table_data=subj_table):
+                                invalid_sum_subjects.append(subj_table['subject'] if 'subject' in subj_table.keys() else subj_table['subject_name'] if 'subject_name' in subj_table.keys() else subj_table['subject_code'] if 'subject_code' in subj_table.keys() else '')
+            if len(invalid_sum_subjects) > 0:
+                results_sum = ''
+                for item in invalid_sum_subjects:
+                    results_sum += f'    <li>{item}</li>'
+                results_sum = f'<ul>List of subjects with invalid sum of class points:\n{results_sum}</ul>'
+            else:
+                results_sum = '<p>All subjects have valid sum of class points.</p>'
+            results_html += f'<h2>Subject points sum check</h2>\n<div>\n{results_sum}\n</div>\n'
 
         results_html += '</body></html>'
         with open(os.path.join(root_dir, Path('tmp/results/results.html')), 'w', encoding='utf-8') as f:

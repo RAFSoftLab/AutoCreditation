@@ -123,7 +123,7 @@ def extract_subjects_table(subj_table):
     Returns:
         (dict):                   Subjects table data
     """
-    school, study_programme, subject, subject_code, subject_name, professor, subject_status, espb, condition, theory_classes, practical_classes = '', '', '', '', '', '', '', '', '', '', ''
+    school, study_programme, subject, subject_code, subject_name, professor, subject_status, espb, condition, theory_classes, practical_classes, class_points = '', '', '', '', '', '', '', '', '', '', '', {}
     subj_header = []
     for index, row in enumerate(subj_table.values):
         if len(row) < 1:
@@ -190,7 +190,27 @@ def extract_subjects_table(subj_table):
             theory_classes = re.sub(r'[tT]eorijska\s+nastava\:*\s*', '', theory_classes)
             practical_classes = re.sub(r'[pP]raktična\s+nastava\:*\s*', '', practical_classes)
             continue
-    return {'school': school, 'studies_programme': study_programme, 'subject': subject, 'subject_code': subject_code, 'subject_name': subject_name, 'professor': professor, 'subject_status': subject_status, 'espb': espb, 'condition': condition, 'theory_classes': theory_classes, 'practical_classes': practical_classes, 'subjects_header': subj_header}
+        if re.search(r'^predispitne\s*', row[0], re.I) and len(subj_table.values) > index + 1:
+            for index_next in range(index + 1, len(subj_table.values)):
+                for itemIndex, item in enumerate(subj_table.values[index_next]):
+                    if (item.__str__() != 'nan') and not item.isdecimal() and (len(class_points.keys()) == 0 or (item != list(class_points.keys())[-1]) or class_points[list(class_points.keys())[-1]] != None):
+                        if item not in class_points.keys():
+                            class_points[item] = None
+                        else:
+                            item_num = re.findall(r'[0-9]+$', item)
+                            if len(item_num) > 0:
+                                for i in range(len(item_num)):
+                                    if item_num[i].isdecimal():
+                                        item_num = int(item_num[i])
+                                        break
+                            else:
+                                item_num = 1
+                            item_num += 1
+                            class_points[f'{item} {item_num}'] = None
+
+                    elif (item.__str__() != 'nan') and item.isdecimal() and class_points[list(class_points.keys())[-1]] is None:
+                        class_points[list(class_points.keys())[-1]] = item
+    return {'school': school, 'studies_programme': study_programme, 'subject': subject, 'subject_code': subject_code, 'subject_name': subject_name, 'professor': professor, 'subject_status': subject_status, 'espb': espb, 'condition': condition, 'theory_classes': theory_classes, 'practical_classes': practical_classes, 'class_points': class_points, 'subjects_header': subj_header}
 
 def read_professors(root_dir, professors_file_txt):
     """
@@ -393,6 +413,26 @@ def compare_prof_and_subj_data(root_dir, prof_data='', subj_data='', prof_data_s
     # Save results
     results_save_read.save_results(root_dir=root_dir, results={'prof_to_subj_not_found': professors_to_subjects_not_found, 'subj_to_prof_not_found': subjects_to_professors_not_found})
     return {'prof_to_subj_not_found': professors_to_subjects_not_found, 'subj_to_prof_not_found': subjects_to_professors_not_found}
+
+def test_class_points_sum(subject_table_data):
+    """
+    Tests if the sum of class points in the subject table is equal to 100.
+
+    Args:
+        subject_table_data (dict):   Subject table
+    Returns:
+        (bool):                      True if the sum of class points is equal to 100, False otherwise
+    """
+    class_points = subject_table_data['class_points'] if 'class_points' else None
+    if class_points is None:
+        return []
+    points_sum = 0
+    for item in class_points.values():
+        if item is not None and item.__str__() != 'nan' and item.isdecimal():
+            points_sum += int(item)
+    if points_sum != 100:
+        return False
+    return True
 
 def filter_sort_results(root_dir):
     """

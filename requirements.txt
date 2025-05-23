@@ -4,6 +4,7 @@ PyQt5
 pyqtspinner
 pandas
 ujson
+pywin32; sys_platform == "win32"
 # aspose-words
 # markitdown
 # textract
