@@ -29,14 +29,14 @@ class PopupDialog(QDialog):
         layout.addLayout(btn_layout)
         self.setLayout(layout)
 
-def generate_html(main_win_root_dir, root_dir=''):
+def generate_html(main_win_root_dir, root_dir='', params={}):
     """
     Generates HTML files from the results.
     """
     root_dir = root_dir if root_dir != '' else main_win_root_dir
     print("Generating HTML files...")
     try:
-        util.generate_res_html(root_dir=root_dir)
+        util.generate_res_html(root_dir=root_dir, check_subj_points_sum=params['check_subj_points_sum'] if 'check_subj_points_sum' in params.keys() else False, min_subj_per_prof=params['min_subj_per_prof'] if 'min_subj_per_prof' in params.keys() else None)
     except Exception as e:
         print(f'Error generating HTML files:\n    {e}')
 
