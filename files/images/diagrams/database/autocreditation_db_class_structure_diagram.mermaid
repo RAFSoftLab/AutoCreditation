@@ -1,0 +1,71 @@
+classDiagram
+    class ProfessorDBConverter {
+        -str db_path
+        -sqlite3.Connection conn
+        -sqlite3.Cursor cursor
+        +__init__(db_path: str)
+        +connect() None
+        +close() None
+        +create_tables() None
+        +insert_professors_list(professors_list: List[Dict]) None
+        +insert_professors_and_subjects(professors_data: List[Dict]) None
+        +process_json_file(json_path: str) None
+        +convert(json_path: str) None
+    }
+    
+    class SubjectDBConverter {
+        -str db_path
+        -sqlite3.Connection conn
+        -sqlite3.Cursor cursor
+        +__init__(db_path: str)
+        +connect() None
+        +close() None
+        +create_tables() None
+        +insert_subjects(subj_list: List[Dict], subj_tables: List[Dict]) None
+        +process_json_file(json_path: str) None
+        +convert(json_path: str) None
+    }
+    
+    class ResultsDBConverter {
+        -str db_path
+        -sqlite3.Connection conn
+        -sqlite3.Cursor cursor
+        +__init__(db_path: str)
+        +connect() None
+        +close() None
+        +create_tables() None
+        +insert_programme_info(results_data: Dict) None
+        +process_json_file(json_path: str) None
+        +convert(json_path: str) None
+    }
+    
+    class ProfessorDBToJSON {
+        -str db_path
+        -sqlite3.Connection conn
+        -sqlite3.Cursor cursor
+        +__init__(db_path: str)
+        +connect() None
+        +close() None
+        +get_professors_list() List[Dict]
+        +get_professors_table_data() List[Dict]
+        +get_subjects_list_data() List[Dict]
+        +get_subjects_table_data() List[Dict]
+        +get_programme_data() Dict
+        +get_headers() Tuple[List[str]]
+        +create_professors_json() List[Dict]
+        +create_subjects_json() List[Dict]
+        +create_results_json() Dict
+        +convert_to_json(professors_path: str, subjects_path: str, results_path: str) None
+    }
+    
+    %% Relationships
+    ProfessorDBConverter ..> sqlite3 : uses
+    SubjectDBConverter ..> sqlite3 : uses
+    ResultsDBConverter ..> sqlite3 : uses
+    ProfessorDBToJSON ..> sqlite3 : uses
+    
+    %% Notes
+    note for ProfessorDBConverter "Converts professor JSON data\nto SQLite database tables"
+    note for SubjectDBConverter "Converts subject JSON data\nto SQLite database tables"
+    note for ResultsDBConverter "Converts results JSON data\nto SQLite database tables"
+    note for ProfessorDBToJSON "Converts SQLite database\nback to JSON format"

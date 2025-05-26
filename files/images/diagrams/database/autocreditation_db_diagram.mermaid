@@ -1,0 +1,61 @@
+erDiagram
+    professors_table {
+        INTEGER id PK "Primary Key"
+        TEXT name "Professor Name"
+        TEXT title "Academic Title"
+        TEXT institution "Institution"
+        TEXT sci_discipline "Scientific Discipline"
+    }
+    
+    prof_subjects_table {
+        INTEGER id PK "Primary Key"
+        TEXT subject_index "Subject Index"
+        TEXT code "Subject Code"
+        TEXT name "Subject Name"
+        TEXT type "Subject Type"
+        TEXT studies_programme "Studies Programme"
+        TEXT studies_type "Studies Type"
+        INTEGER professor_id FK "Foreign Key to professors_table"
+    }
+    
+    professors_list_table {
+        INTEGER id PK "Primary Key"
+        TEXT ord_num "Order Number"
+        TEXT prof_name "Professor Name"
+        TEXT prof_title "Professor Title"
+    }
+    
+    subjects_table {
+        INTEGER id PK "Primary Key"
+        TEXT subject_index "Subject Index"
+        TEXT code "Subject Code"
+        TEXT name "Subject Name"
+        TEXT type "Subject Type"
+        TEXT sem "Semester"
+        TEXT p "Lectures"
+        TEXT v "Exercises"
+        TEXT don "Other Activities"
+        TEXT other "Other Classes"
+        TEXT espb "ESPB Credits"
+        TEXT professor "Professor"
+        TEXT subject_status "Subject Status"
+        TEXT condition "Condition"
+        TEXT theory_classes "Theory Classes"
+        TEXT practical_classes "Practical Classes"
+        TEXT studies_programme "Studies Programme"
+        TEXT school "School"
+        TEXT class_points "Class Points (JSON)"
+    }
+    
+    programme_table {
+        INTEGER id PK "Primary Key"
+        TEXT studies_programme "Studies Programme"
+        TEXT studies_type "Studies Type"
+    }
+    
+    %% Relationships
+    professors_table ||--o{ prof_subjects_table : "teaches"
+    
+    %% Notes about table purposes
+    professors_table }|..|| professors_list_table : "related_data"
+    subjects_table }|..|| prof_subjects_table : "subject_details"

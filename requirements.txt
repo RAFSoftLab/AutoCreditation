@@ -1,6 +1,7 @@
 python-docx
 mammoth
 PyQt5
+PyQtWebEngine
 pyqtspinner
 pandas
 ujson

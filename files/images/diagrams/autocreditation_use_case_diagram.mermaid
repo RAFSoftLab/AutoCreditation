@@ -1,0 +1,64 @@
+graph TB
+    User((User))
+    
+    subgraph "Main Window Use Cases"
+        UC1[Enter Documentation Path]
+        UC2[Choose Directory]
+        UC3[Configure General Options]
+        UC4[Configure Test Options]
+        UC5[Run Verification Test]
+        UC6[View Results]
+    end
+    
+    subgraph "General Options Use Cases"
+        UC7[Import/Export Results]
+        UC8[Import/Export Database]
+        UC9[Clear Temp Directory]
+        UC10[Use Cached Data]
+    end
+    
+    subgraph "Test Options Use Cases"
+        UC11[Compare Tables]
+        UC12[Set Min Subjects]
+        UC13[Verify Class Points]
+    end
+    
+    subgraph "Results Viewer Use Cases"
+        UC14[View Data Overview]
+        UC15[View Statistics]
+        UC16[View Test Results]
+        UC17[View Documentation Tree]
+        UC18[View Professor Data]
+        UC19[View Subjects Data]
+        UC20[Browse Files]
+        UC21[Navigate Professor Links]
+    end
+    
+    User --> UC1
+    User --> UC2
+    User --> UC3
+    User --> UC4
+    User --> UC5
+    User --> UC6
+    
+    UC3 --> UC7
+    UC3 --> UC8
+    UC3 --> UC9
+    UC3 --> UC10
+    
+    UC4 --> UC11
+    UC4 --> UC12
+    UC4 --> UC13
+    
+    UC6 --> UC14
+    UC6 --> UC15
+    UC6 --> UC16
+    UC6 --> UC17
+    UC6 --> UC18
+    UC6 --> UC19
+    UC6 --> UC20
+    
+    UC18 --> UC21
+    
+    UC5 -.->|validates| UC1
+    UC6 -.->|requires| UC5

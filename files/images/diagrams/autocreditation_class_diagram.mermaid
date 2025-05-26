@@ -1,0 +1,205 @@
+classDiagram
+    class MainWindow {
+        -String documentationPath
+        -DirectoryChooser directoryChooser
+        -OptionsPanel optionsPanel
+        -TestRunner testRunner
+        -ProgressDisplay progressDisplay
+        +setDocumentationPath(String)
+        +chooseDirectory()
+        +showOptions()
+        +runTest()
+        +openResultsViewer()
+        +validatePath() boolean
+        +updateRunButtonState()
+    }
+    
+    class OptionsPanel {
+        -GeneralOptions generalOptions
+        -TestOptions testOptions
+        -boolean isVisible
+        +showGeneralOptions()
+        +showTestOptions()
+        +applyOptions()
+        +resetOptions()
+    }
+    
+    class GeneralOptions {
+        -boolean clearTempOnStart
+        -boolean useCachedData
+        +importResults(String)
+        +exportResults(String)
+        +importDatabase(String)
+        +exportDatabase(String)
+        +clearTempDirectory()
+        +showNotification(String, boolean)
+    }
+    
+    class TestOptions {
+        -boolean compareTables
+        -int minSubjectsPerProfessor
+        -boolean verifyClassPoints
+        +setCompareTablesOption(boolean)
+        +setMinSubjects(int)
+        +setVerifyPoints(boolean)
+        +getConfiguration() TestConfig
+    }
+    
+    class TestRunner {
+        -TestConfig config
+        -DocumentationExtractor extractor
+        -DataValidator validator
+        -ProgressCallback callback
+        +runTest(TestConfig)
+        +extractData(String) DocumentationData
+        +validateData(DocumentationData) TestResults
+        +generateReport(TestResults) String
+    }
+    
+    class DocumentationExtractor {
+        -String sourcePath
+        -String tempPath
+        +extractProfessorData() List~Professor~
+        +extractSubjectData() List~Subject~
+        +generateDirectoryTree() DirectoryTree
+        +useCachedDataIfExists() boolean
+    }
+    
+    class DataValidator {
+        -TestConfig config
+        +validateProfessorSubjectRelation(List~Professor~, List~Subject~) ValidationResult
+        +validateMinSubjectsPerProfessor(List~Professor~, int) ValidationResult
+        +validateClassPointsSum(List~Subject~) ValidationResult
+        +compareTablesStructure() ValidationResult
+    }
+    
+    class ResultsViewer {
+        -ViewPanel viewPanel
+        -ContentArea contentArea
+        -TestResults results
+        -DocumentationData data
+        +showOverview()
+        +showResults()
+        +showProfessorData()
+        +showSubjectData()
+        +showFileExplorer()
+    }
+    
+    class ViewPanel {
+        -List~ViewOption~ views
+        -ViewOption selectedView
+        +selectView(ViewOption)
+        +refreshViews()
+    }
+    
+    class ContentArea {
+        -TabContainer tabContainer
+        +displayOverviewTabs()
+        +displayResultsTabs()
+        +displayProfessorTabs()
+        +displaySubjectTabs()
+        +displayFileExplorer()
+    }
+    
+    class OverviewTab {
+        -DataOverview dataOverview
+        -StatisticsOverview statisticsOverview
+        +generateDataSummary() String
+        +generateStatistics() String
+    }
+    
+    class ResultsTab {
+        -String htmlResults
+        -DirectoryTree documentationTree
+        +displayResultsHTML()
+        +displayDirectoryTree()
+    }
+    
+    class ProfessorTab {
+        -List~Professor~ professors
+        -HTMLGenerator htmlGenerator
+        -TableViewer tableViewer
+        +generateProfessorHTML() String
+        +displayProfessorTable()
+        +handleProfessorLinkClick(int)
+    }
+    
+    class SubjectTab {
+        -List~Subject~ subjects
+        -HTMLGenerator htmlGenerator
+        -TableViewer tableViewer
+        +generateSubjectHTML() String
+        +displaySubjectTable()
+    }
+    
+    class FileExplorer {
+        -String rootPath
+        -DirectoryBrowser browser
+        +setRootPath(String)
+        +browseForRoot()
+        +navigateDirectory(String)
+        +refreshFileTree()
+    }
+    
+    class Professor {
+        -int id
+        -String name
+        -String department
+        -List~Subject~ subjects
+        +addSubject(Subject)
+        +getSubjectCount() int
+    }
+    
+    class Subject {
+        -int id
+        -String name
+        -String code
+        -int classPoints
+        -int professorId
+        +validatePoints() boolean
+    }
+    
+    class TestResults {
+        -List~ValidationResult~ results
+        -String timestamp
+        -TestConfig config
+        +addResult(ValidationResult)
+        +isAllPassed() boolean
+        +generateSummary() String
+    }
+    
+    class ValidationResult {
+        -String testName
+        -boolean passed
+        -String message
+        -List~String~ details
+        +addDetail(String)
+    }
+    
+    MainWindow --> OptionsPanel
+    MainWindow --> TestRunner
+    MainWindow --> ResultsViewer
+    
+    OptionsPanel --> GeneralOptions
+    OptionsPanel --> TestOptions
+    
+    TestRunner --> DocumentationExtractor
+    TestRunner --> DataValidator
+    
+    ResultsViewer --> ViewPanel
+    ResultsViewer --> ContentArea
+    
+    ContentArea --> OverviewTab
+    ContentArea --> ResultsTab
+    ContentArea --> ProfessorTab
+    ContentArea --> SubjectTab
+    ContentArea --> FileExplorer
+    
+    DocumentationExtractor --> Professor
+    DocumentationExtractor --> Subject
+    
+    DataValidator --> ValidationResult
+    DataValidator --> TestResults
+    
+    TestResults --> ValidationResult
+    Professor --> Subject

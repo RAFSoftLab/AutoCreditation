@@ -1,0 +1,67 @@
+flowchart TB
+    subgraph UILayer ["User Interface Layer"]
+        MainUI[Main Window Component]
+        ResultsUI[Results Viewer Component]
+        OptionsUI[Options Panel Component]
+        FileUI[File Explorer Component]
+    end
+    
+    subgraph BusinessLayer ["Business Logic Layer"]
+        TestEngine[Test Execution Engine]
+        DataProcessor[Data Processing Engine]
+        ValidationEngine[Validation Engine]
+        ReportGenerator[Report Generation Engine]
+    end
+    
+    subgraph DataLayer ["Data Access Layer"]
+        DocumentExtractor[Documentation Extractor]
+        FileManager[File Manager]
+        CacheManager[Cache Manager]
+        DatabaseManager[Database Manager]
+    end
+    
+    subgraph ExternalSys ["External Systems"]
+        FileSystem[(File System)]
+        TmpStorage[(Temporary Storage)]
+        ResultsStorage[(Results Storage)]
+    end
+    
+    subgraph DataModels ["Core Data Models"]
+        ProfessorModel[Professor Model]
+        SubjectModel[Subject Model]
+        TestResultModel[Test Result Model]
+        ConfigModel[Configuration Model]
+    end
+    
+    %% UI Layer Connections
+    MainUI --> OptionsUI
+    MainUI --> TestEngine
+    MainUI --> ResultsUI
+    ResultsUI --> FileUI
+    
+    %% Business Logic Connections
+    TestEngine --> DataProcessor
+    TestEngine --> ValidationEngine
+    TestEngine --> ReportGenerator
+    DataProcessor --> DocumentExtractor
+    ValidationEngine --> ProfessorModel
+    ValidationEngine --> SubjectModel
+    
+    %% Data Access Connections
+    DocumentExtractor --> FileManager
+    DataProcessor --> CacheManager
+    TestEngine --> DatabaseManager
+    FileManager --> FileSystem
+    CacheManager --> TmpStorage
+    DatabaseManager --> ResultsStorage
+    
+    %% Model Usage
+    DataProcessor --> ProfessorModel
+    DataProcessor --> SubjectModel
+    ValidationEngine --> TestResultModel
+    OptionsUI --> ConfigModel
+    
+    %% Cross-layer Dependencies
+    ResultsUI --> TestResultModel
+    ResultsUI --> ProfessorModel
+    ResultsUI --> SubjectModel

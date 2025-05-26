@@ -29,12 +29,16 @@ class ProfessorDBConverter:
         self.cursor = None
 
     def connect(self) -> None:
-        """Establish connection to the database"""
+        """
+        Establish connection to the database
+        """
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
 
     def close(self) -> None:
-        """Close the database connection"""
+        """
+        Close the database connection
+        """
         if self.conn:
             self.conn.commit()
             self.conn.close()
@@ -42,7 +46,9 @@ class ProfessorDBConverter:
             self.cursor = None
 
     def create_tables(self) -> None:
-        """Create the necessary database tables"""
+        """
+        Create the necessary database tables
+        """
         # Professors table from prof_tables
         self.cursor.execute('''
         CREATE TABLE IF NOT EXISTS professors_table (
@@ -205,12 +211,16 @@ class SubjectDBConverter:
         self.cursor = None
 
     def connect(self) -> None:
-        """Establish connection to the database"""
+        """
+        Establish connection to the database
+        """
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
 
     def close(self) -> None:
-        """Close the database connection"""
+        """
+        Close the database connection
+        """
         if self.conn:
             self.conn.commit()
             self.conn.close()
@@ -218,7 +228,9 @@ class SubjectDBConverter:
             self.cursor = None
 
     def create_tables(self) -> None:
-        """Create the necessary database tables for subjects"""
+        """
+        Create the necessary database tables for subjects
+        """
         # Main subjects table
         self.cursor.execute('''
         CREATE TABLE IF NOT EXISTS subjects_table (
@@ -239,7 +251,8 @@ class SubjectDBConverter:
             theory_classes TEXT,
             practical_classes TEXT,
             studies_programme TEXT,
-            school TEXT
+            school TEXT,
+            class_points TEXT
         )
         ''')
 
@@ -266,13 +279,17 @@ class SubjectDBConverter:
             # Find matching subject in subj_list if exists
             subj_list_data = subj_list_lookup.get(code, {})
 
+            # Handle class_points - convert dictionary to JSON string for storage
+            class_points = subject.get('class_points', subj_list_data.get('class_points', {}))
+            class_points_json = json.dumps(class_points, ensure_ascii=False) if class_points else ''
+
             # Combine data from both sources
             self.cursor.execute('''
             INSERT INTO subjects_table (
                 subject_index, code, name, type, sem, p, v, don, other, espb,
                 professor, subject_status, condition, theory_classes, practical_classes,
-                studies_programme, school
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                studies_programme, school, class_points
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 subj_list_data.get('index', ''),
                 code,
@@ -290,7 +307,8 @@ class SubjectDBConverter:
                 subject.get('theory_classes', ''),
                 subject.get('practical_classes', ''),
                 subject.get('studies_programme', ''),
-                subject.get('school', '')
+                subject.get('school', ''),
+                class_points_json
             ))
 
         self.conn.commit()
@@ -358,7 +376,9 @@ class ResultsDBConverter:
         self.cursor = None
 
     def connect(self) -> None:
-        """Establish connection to the database"""
+        """
+        Establish connection to the database
+        """
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
 
@@ -371,7 +391,9 @@ class ResultsDBConverter:
             self.cursor = None
 
     def create_tables(self) -> None:
-        """Create the necessary database tables for results data"""
+        """
+        Create the necessary database tables for results data
+        """
         # Programme table for storing general programme information
         self.cursor.execute('''
         CREATE TABLE IF NOT EXISTS programme_table (
@@ -450,13 +472,17 @@ class ProfessorDBToJSON:
         self.cursor = None
 
     def connect(self) -> None:
-        """Establish connection to the database"""
+        """
+        Establish connection to the database
+        """
         self.conn = sqlite3.connect(self.db_path)
         self.conn.row_factory = sqlite3.Row  # This enables column access by name
         self.cursor = self.conn.cursor()
 
     def close(self) -> None:
-        """Close the database connection"""
+        """
+        Close the database connection
+        """
         if self.conn:
             self.conn.close()
             self.conn = None
@@ -543,7 +569,7 @@ class ProfessorDBToJSON:
             List of dictionaries containing subject list data
         """
         self.cursor.execute("""
-            SELECT subject_index as "index", code, name, type, sem, p, v, don, other, espb
+            SELECT subject_index as "index", code, name, type, sem, p, v, don, other, espb, class_points
             FROM subjects_table
             ORDER BY subject_index
         """)
@@ -552,6 +578,14 @@ class ProfessorDBToJSON:
         # Convert to list of dictionaries
         result = []
         for subj in subjects:
+            # Parse class_points JSON string back to dictionary
+            class_points = {}
+            if subj["class_points"]:
+                try:
+                    class_points = json.loads(subj["class_points"])
+                except json.JSONDecodeError:
+                    class_points = {}
+
             result.append({
                 "index": subj["index"],
                 "code": subj["code"],
@@ -562,7 +596,8 @@ class ProfessorDBToJSON:
                 "v": subj["v"],
                 "don": subj["don"],
                 "other": subj["other"],
-                "espb": subj["espb"]
+                "espb": subj["espb"],
+                "class_points": class_points
             })
 
         return result
@@ -589,6 +624,14 @@ class ProfessorDBToJSON:
             # Create the full subject name with code
             subject_full = f"{subject_code} {subj['name']}" if subject_code else subj['name']
 
+            # Parse class_points JSON string back to dictionary
+            class_points = {}
+            if subj["class_points"]:
+                try:
+                    class_points = json.loads(subj["class_points"])
+                except json.JSONDecodeError:
+                    class_points = {}
+
             result.append({
                 "school": subj["school"],
                 "studies_programme": subj["studies_programme"],
@@ -601,7 +644,8 @@ class ProfessorDBToJSON:
                 "condition": subj["condition"],
                 "theory_classes": subj["theory_classes"],
                 "practical_classes": subj["practical_classes"],
-                "subjects_header": []
+                "subjects_header": [],
+                "class_points": class_points
             })
 
         return result
@@ -838,31 +882,3 @@ def db_to_json(db_path: str, professors_output_path: str,
         os.makedirs(os.path.dirname(results_output_path), exist_ok=True)
     converter = ProfessorDBToJSON(db_path)
     converter.convert_to_json(professors_output_path, subjects_output_path, results_output_path)
-
-
-def main():
-    """Main function to demonstrate usage"""
-    # Default paths
-    professors_json_path = os.path.join(os.getcwd(), Path("tmp/professors_data.json"))
-    subjects_json_path = os.path.join(os.getcwd(), Path("tmp/subjects_data.json"))
-    results_json_path = os.path.join(os.getcwd(), Path("tmp/results_data.json"))
-    db_path = os.path.join(os.getcwd(), Path("tmp/acreditation.db"))
-    professors_output_path = os.path.join(os.getcwd(), Path("tmp/professors_output.json"))
-    subjects_output_path = os.path.join(os.getcwd(), Path("tmp/subjects_output.json"))
-    results_output_path = os.path.join(os.getcwd(), Path("tmp/results_output.json"))
-
-    # Convert JSON to database
-    json_to_db(professors_json_path, subjects_json_path, results_json_path, db_path)
-
-    # Convert database back to JSON
-    db_to_json(db_path, professors_output_path, subjects_output_path, results_output_path)
-
-    print("Database conversion complete!")
-    print(f"The database has been created at: {os.path.abspath(db_path)}")
-    print(f"Professors data exported to: {os.path.abspath(professors_output_path)}")
-    print(f"Subjects data exported to: {os.path.abspath(subjects_output_path)}")
-    print(f"Results data exported to: {os.path.abspath(results_output_path)}")
-
-
-if __name__ == "__main__":
-    main()

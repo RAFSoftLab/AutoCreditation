@@ -1,0 +1,47 @@
+flowchart TD
+    Start([Start Test]) --> CheckPath{Valid Documentation Path?}
+    CheckPath -->|No| Error1[Display Error Message]
+    Error1 --> End1([End])
+    
+    CheckPath -->|Yes| CheckOptions[Load Test Options]
+    CheckOptions --> ClearTemp{Clear /tmp directory?}
+    ClearTemp -->|Yes| ClearTempDir[Clear /tmp Directory]
+    ClearTemp -->|No| CheckCached
+    ClearTempDir --> CheckCached{Use Cached Data?}
+    
+    CheckCached -->|Yes| CachedExists{Cached Data Exists?}
+    CachedExists -->|Yes| LoadCached[Load Cached Data]
+    CachedExists -->|No| ExtractData[Extract from Documentation]
+    CheckCached -->|No| ExtractData
+    
+    LoadCached --> ValidateData[Start Data Validation]
+    ExtractData --> ExtractProf[Extract Professor Data]
+    ExtractProf --> ExtractSubj[Extract Subject Data]
+    ExtractSubj --> GenTree[Generate Directory Tree]
+    GenTree --> SaveCache[Save to Cache]
+    SaveCache --> ValidateData
+    
+    ValidateData --> TestCompTables{Compare Tables Test Enabled?}
+    TestCompTables -->|Yes| CompTables[Compare Professor/Subject Tables]
+    TestCompTables -->|No| TestMinSubj
+    CompTables --> RecordResult1[Record Comparison Result]
+    RecordResult1 --> TestMinSubj{Min Subjects Test Enabled?}
+    
+    TestMinSubj -->|Yes| CheckMinSubj[Check Min Subjects per Professor]
+    TestMinSubj -->|No| TestClassPoints
+    CheckMinSubj --> RecordResult2[Record Min Subjects Result]
+    RecordResult2 --> TestClassPoints{Class Points Test Enabled?}
+    
+    TestClassPoints -->|Yes| VerifyPoints[Verify Class Points Sum]
+    TestClassPoints -->|No| GenReport
+    VerifyPoints --> RecordResult3[Record Points Result]
+    RecordResult3 --> GenReport[Generate Test Report]
+    
+    GenReport --> SaveResults[Save Results to File]
+    SaveResults --> ShowComplete[Show Test Complete Message]
+    ShowComplete --> End2([End])
+    
+    style Start fill:#90EE90
+    style End1 fill:#FFB6C1
+    style End2 fill:#90EE90
+    style Error1 fill:#FFB6C1
