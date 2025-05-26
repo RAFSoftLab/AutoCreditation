@@ -789,7 +789,7 @@ def generate_subjects_html(root_dir=''):
                 if 'data' not in subj_data_item.keys():
                     subj_data_html += f'<p>No subjects tables found.</p>\n'
                 else:
-                    subj_data_tables = f'{8 * " "}<tr>\n{12 * " "}<th>School</th><th>Studies Programme</th><th>Full Name</th><th>Subject Code</th><th>Subject Name</th><th>Professor</th><th>Subject Status</th><th>ESPB</th><th>Condition</th><th>Theory Classes</th><th>Practical Classes</th>\n</tr>\n'
+                    subj_data_tables = f'{8 * " "}<tr>\n{12 * " "}<th>School</th><th>Studies Programme</th><th>Full Name</th><th>Subject Code</th><th>Subject Name</th><th>Professor</th><th>Subject Status</th><th>ESPB</th><th>Condition</th><th>Theory Classes</th><th>Practical Classes</th><th>Class Points</th>\n</tr>\n'
                     for subj_item in subj_data_item['data']:
                         subject_prof = subj_item['professor'] if 'professor' in subj_item.keys() else ''
                         subj_prof = [i.strip() for i in subject_prof.split(',')] if len(subject_prof) > 0 else []
@@ -809,7 +809,8 @@ def generate_subjects_html(root_dir=''):
                                                                                                 <td>{subj_item["espb"] if "espb" in subj_item.keys() else ""}</td>\
                                                                                                     <td>{subj_item["condition"] if "condition" in subj_item.keys() else ""}</td>\
                                                                                                         <td>{subj_item["theory_classes"] if "theory_classes" in subj_item.keys() else ""}</td>\
-                                                                                                            <td>{subj_item["practical_classes"] if "practical_classes" in subj_item.keys() else ""}</td>\n</tr>\n</tr>\n'
+                                                                                                            <td>{subj_item["practical_classes"] if "practical_classes" in subj_item.keys() else ""}</td>\
+                                                                                                                <td>{"; ".join([f"{i}: {subj_item['class_points'][i]}" for i in subj_item["class_points"].keys()]) if "class_points" in subj_item.keys() else ""}</td>\n</tr>\n</tr>\n'
                     subj_data_html += f'<table>\n{4 * " "}{subj_data_tables}\n</table>\n'
         subj_data_html = f'<html>\n<head>\n<style>\ntable {{\n    border: 1px solid black;\n    border-collapse: collapse;\n}}\nth, td {{\n    border: 1px solid black;\n    padding: 5px;\n    margin: 0px auto;\n    border-collapse: collapse;\n}}\n</style>\n</head>\n<body>\n{subj_data_html}\n</body>\n</html>'
         with open(os.path.join(root_dir, Path('tmp/results/subjects_data.html')), mode='w', encoding='utf-8') as f:
@@ -876,3 +877,37 @@ def compare_prof_names(prof_name1, prof_name2):
         prof_name2.pop(1)
     # Compare names
     return True if prof_name1 == prof_name2 else False
+
+def generate_summary_html(root_dir=''):
+    """
+    Generates HTML file for the summary tab.
+
+    Args:
+        root_dir (str):          Root directory of the project, absolute path
+
+    Returns:
+        None
+    """
+    print("Generating summary HTML file...")
+    if os.path.exists(os.path.join(root_dir, Path('tmp/results/summary.html'))):
+        summary_html = f'<html>\n<head>\n<style>\ntable {{\n    border: 1px solid black;\n    border-collapse: collapse;\n}}\nth, td {{\n    border: 1px solid black;\n    padding: 5px;\n    margin: 0px auto;\n    border-collapse: collapse;\n}}\n</style>\n</head>\n<body>\n{summary_html}\n</body>\n</html>'
+        with open(os.path.join(root_dir, Path('tmp/results/summary.html')), 'w', encoding='utf-8') as f:
+            f.write(summary_html)
+    print("Summary HTML file generated.")
+
+def generate_stats_html(root_dir=''):
+    """
+    Generates HTML file for the statistics tab.
+
+    Args:
+        root_dir (str):          Root directory of the project, absolute path
+
+    Returns:
+        None
+    """
+    print("Generating statistics HTML file...")
+    if os.path.exists(os.path.join(root_dir, Path('tmp/results/stats.html'))):
+        stats_html = f'<html>\n<head>\n<style>\ntable {{\n    border: 1px solid black;\n    border-collapse: collapse;\n}}\nth, td {{\n    border: 1px solid black;\n    padding: 5px;\n    margin: 0px auto;\n    border-collapse: collapse;\n}}\n</style>\n</head>\n<body>\n{stats_html}\n</body>\n</html>'
+        with open(os.path.join(root_dir, Path('tmp/results/stats.html')), 'w', encoding='utf-8') as f:
+            f.write(stats_html)
+    print("Statistics HTML file generated.")

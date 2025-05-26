@@ -1,0 +1,56 @@
+sequenceDiagram
+    participant User
+    participant MainWindow
+    participant OptionsPanel
+    participant TestRunner
+    participant DocumentationExtractor
+    participant DataValidator
+    participant ResultsViewer
+    
+    User->>MainWindow: Enter documentation path
+    MainWindow->>MainWindow: validatePath()
+    MainWindow->>MainWindow: updateRunButtonState()
+    
+    User->>MainWindow: Click options button
+    MainWindow->>OptionsPanel: showOptions()
+    OptionsPanel->>User: Display option tabs
+    
+    User->>OptionsPanel: Configure general options
+    OptionsPanel->>OptionsPanel: applyOptions()
+    
+    User->>OptionsPanel: Configure test options
+    OptionsPanel->>OptionsPanel: applyOptions()
+    
+    User->>MainWindow: Click run button
+    MainWindow->>TestRunner: runTest(config)
+    
+    TestRunner->>DocumentationExtractor: extractData(path)
+    
+    alt Use cached data
+        DocumentationExtractor->>DocumentationExtractor: useCachedDataIfExists()
+        DocumentationExtractor-->>TestRunner: Return cached data
+    else Extract fresh data
+        DocumentationExtractor->>DocumentationExtractor: extractProfessorData()
+        DocumentationExtractor->>DocumentationExtractor: extractSubjectData()
+        DocumentationExtractor->>DocumentationExtractor: generateDirectoryTree()
+        DocumentationExtractor-->>TestRunner: Return extracted data
+    end
+    
+    TestRunner->>DataValidator: validateData(data)
+    
+    loop For each validation test
+        DataValidator->>DataValidator: performValidation()
+        DataValidator->>DataValidator: generateValidationResult()
+    end
+    
+    DataValidator-->>TestRunner: Return test results
+    
+    TestRunner->>TestRunner: generateReport(results)
+    TestRunner-->>MainWindow: Return completion status
+    
+    MainWindow->>MainWindow: updateProgressDisplay()
+    MainWindow->>User: Show test completion
+    
+    User->>MainWindow: Click results viewer button
+    MainWindow->>ResultsViewer: openResultsViewer()
+    ResultsViewer->>User: Display results interface

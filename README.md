@@ -2,14 +2,92 @@
 
 Automated reading and checkup of university acreditation documentation files.
 
+# Table of contents
+
+- [AutoCreditation](#autocreditation)
+- [Table of contents](#table-of-contents)
+- [Overview](#overview)
+- [Technial details](#technial-details)
+  - [Use case diagram](#use-case-diagram)
+  - [Component diagram](#component-diagram)
+  - [Class diagram](#class-diagram)
+  - [Activity diagram - test execution](#activity-diagram---test-execution)
+  - [Activity diagram - results viewer navigation](#activity-diagram---results-viewer-navigation)
+  - [Sequence diagram - test execution](#sequence-diagram---test-execution)
+  - [Sequence diagram - results viewer navigation](#sequence-diagram---results-viewer-navigation)
+  - [State diagram](#state-diagram)
+  - [Database](#database)
+    - [Database diagram](#database-diagram)
+    - [Database class structure diagram](#database-class-structure-diagram)
+    - [Database conversion diagram](#database-conversion-diagram)
+  - [Requirements and solutions](#requirements-and-solutions)
+- [Configuration and startup](#configuration-and-startup)
+  - [Setting up the environment](#setting-up-the-environment)
+    - [Automatic dependency installation](#automatic-dependency-installation)
+    - [Manual dependency installation](#manual-dependency-installation)
+  - [Running the project](#running-the-project)
+- [Usage](#usage)
+  - [GUI](#gui)
+- [Changelog](#changelog)
+
 # Overview
 
- - Converts given documentation files to text and verifies content, confirming that needed documents are and all required information is present.
- - Supported operating systems:
-   - Windows (with MS Office Word installed)
-   - Linux (with LibreOffice Writer installed)
+- Converts given documentation files to text and verifies content, confirming that needed documents are and all required information is present.
+- Supported operating systems:
+ - Windows (with MS Office Word installed)
+ - Linux (with LibreOffice Writer installed)
+
+[Back to top](#autocreditation)
+
+---
 
 # Technial details
+
+## Use case diagram
+
+![use_case_diagram](files/images/diagrams/autocreditation_use_case_diagram.png)
+
+## Component diagram
+
+![component_diagram](files/images/diagrams/autocreditation_component_diagram.png)
+
+## Class diagram
+
+![class_diagram](files/images/diagrams/autocreditation_class_diagram.png)
+
+## Activity diagram - test execution
+
+![activity_diagram](files/images/diagrams/autocreditation_activity_diagram.png)
+
+## Activity diagram - results viewer navigation
+
+![activity_diagram_results_viewer](files/images/diagrams/autocreditation_activity_diagram_results_viewer.png)
+
+## Sequence diagram - test execution
+
+![sequence_diagram](files/images/diagrams/autocreditation_sequence_diagram.png)
+
+## Sequence diagram - results viewer navigation
+
+![sequence_diagram_results_viewer](files/images/diagrams/autocreditation_sequence_diagram_results_viewer.png)
+
+## State diagram
+
+![state_diagram](files/images/diagrams/autocreditation_state_diagram.png)
+
+## Database
+
+### Database diagram
+
+![database_diagram](files/images/diagrams/database/autocreditation_db_diagram.png)
+
+### Database class structure diagram
+
+![database_class_structure_diagram](files/images/diagrams/database/autocreditation_db_class_structure_diagram.png)
+
+### Database conversion diagram
+
+![database_conversion_diagram](files/images/diagrams/database/autocreditation_db_conversion_diagram.png)
 
 ## Requirements and solutions
 
@@ -54,6 +132,10 @@ Automated reading and checkup of university acreditation documentation files.
       - Finding items where professor name is not matching (subject found in the subjects list of a professor, but professor name is not matching)
       - Finding items where subject name is not matching (subject found in the subjects list of a professor, but subject name is not matching)
 
+[Back to top](#autocreditation)
+
+---
+
 # Configuration and startup
 
 ## Setting up the environment
@@ -82,43 +164,50 @@ Automated reading and checkup of university acreditation documentation files.
   | mammoth | pip install mammoth | conda install auto::mammoth |
   | pandas | pip install pandas | conda install anaconda::pandas |
   | ujson | pip install ujson | conda install anaconda::ujson |
-  ---
 
 
 ## Running the project
 
   TODO
 
-## Usage
+[Back to top](#autocreditation)
 
-  Graphical user interface (GUI) allows user-friendly interaction with the application.
+---
 
-  ### GUI
+# Usage
 
-  Application can be used by running the `run_app.py` file. GUI is used to select the documentation directory, run the application, and view the results.
+Graphical user interface (GUI) allows user-friendly interaction with the application.
 
-  - At the start, path to the documentation directory should be written in the text line, or chosen from the file dialog opend by clicking the "Choose directory" button.
-  - If path in the text line is empty, "No documentation directory selected" label is shown in red colour and the "Run" button is disabled.
+## GUI
 
-    ![main_window_1](files/images/app_run/app_main_1.png)
+Application can be used by running the `run_app.py` file. GUI is used to select the documentation directory, run the application, and view the results.
 
-  - If path in the text line is not valid, "Invalid directory path" label is shown in red colour and the "Run" button is disabled.
-  - If path in the text line is valid, "Valid directory path" label is shown in green colour and the "Run" button is enabled.
+- At the start, path to the documentation directory should be written in the text line, or chosen from the file dialog opend by clicking the "Choose directory" button.
+- If path in the text line is empty, "No documentation directory selected" label is shown in red colour and the "Run" button is disabled.
 
-    ![main_window_2](files/images/app_run/app_main_2.png)
+  ![main_window_1](files/images/app_run/app_main_1.png)
 
-  - Clicking the "Run" button starts the application.
+- If path in the text line is not valid, "Invalid directory path" label is shown in red colour and the "Run" button is disabled.
+- If path in the text line is valid, "Valid directory path" label is shown in green colour and the "Run" button is enabled.
 
-    ![main_window_3](files/images/app_run/app_main_3.png)
+  ![main_window_2](files/images/app_run/app_main_2.png)
 
-  - The application run scripts and update the results in the text area.
-  - While the application is running, all elements in the main window are disabled. The "Run" button text is changed to "Running...". Spinner is shown over the results text area. Progress bar is displayed, and information about the progress is shown in the status label.
+- Clicking the "Run" button starts the application.
 
-    ![main_window_4](files/images/app_run/app_main_4.png)
+  ![main_window_3](files/images/app_run/app_main_3.png)
 
-  - When the application is finished, all elements in the main window are enabled. The "Run" button text is changed to "Run". Spinner is hidden. Progress bar is hidden. Progress description is hidden. Final results are shown in the results text area.
+- The application run scripts and update the results in the text area.
+- While the application is running, all elements in the main window are disabled. The "Run" button text is changed to "Running...". Spinner is shown over the results text area. Progress bar is displayed, and information about the progress is shown in the status label.
 
-    ![main_window_5](files/images/app_run/app_main_5.png)
+  ![main_window_4](files/images/app_run/app_main_4.png)
+
+- When the application is finished, all elements in the main window are enabled. The "Run" button text is changed to "Run". Spinner is hidden. Progress bar is hidden. Progress description is hidden. Final results are shown in the results text area.
+
+  ![main_window_5](files/images/app_run/app_main_5.png)
+
+[Back to top](#autocreditation)
+
+---
 
 # Changelog
 

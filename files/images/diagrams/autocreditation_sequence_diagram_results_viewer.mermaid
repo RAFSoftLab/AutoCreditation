@@ -1,0 +1,42 @@
+sequenceDiagram
+    participant User
+    participant ResultsViewer
+    participant ViewPanel
+    participant ContentArea
+    participant ProfessorTab
+    participant SubjectWindow
+    
+    User->>ResultsViewer: Open results viewer
+    ResultsViewer->>ViewPanel: Initialize views
+    ResultsViewer->>ContentArea: Display overview (default)
+    
+    User->>ViewPanel: Select "Overview"
+    ViewPanel->>ContentArea: displayOverviewTabs()
+    ContentArea->>User: Show Data Overview & Statistics tabs
+    
+    User->>ViewPanel: Select "Results"
+    ViewPanel->>ContentArea: displayResultsTabs()
+    ContentArea->>User: Show Results Display & Documentation Tree tabs
+    
+    User->>ViewPanel: Select "Professor Data"
+    ViewPanel->>ContentArea: displayProfessorTabs()
+    ContentArea->>ProfessorTab: generateProfessorHTML()
+    ProfessorTab->>User: Show Data View & Table Viewer tabs
+    
+    User->>ProfessorTab: Click professor subject link
+    ProfessorTab->>ProfessorTab: handleProfessorLinkClick(professorId)
+    ProfessorTab->>SubjectWindow: Open new window with professor's subjects
+    SubjectWindow->>User: Display professor's subject table
+    
+    User->>ViewPanel: Select "Subjects Data"
+    ViewPanel->>ContentArea: displaySubjectTabs()
+    ContentArea->>User: Show Subject Data View & Table Viewer tabs
+    
+    User->>ViewPanel: Select "File Explorer"
+    ViewPanel->>ContentArea: displayFileExplorer()
+    ContentArea->>User: Show root path input and file browser
+    
+    User->>ContentArea: Browse for root directory
+    ContentArea->>ContentArea: browseForRoot()
+    ContentArea->>ContentArea: refreshFileTree()
+    ContentArea->>User: Update file explorer with new root

@@ -1,0 +1,70 @@
+stateDiagram-v2
+    [*] --> AppStarted : Application Launch
+    
+    AppStarted --> PathEmpty : Initialize UI
+    PathEmpty --> PathValid : Valid Path Entered
+    PathEmpty --> PathInvalid : Invalid Path Entered
+    PathInvalid --> PathEmpty : Clear Path
+    PathInvalid --> PathValid : Valid Path Entered
+    PathValid --> OptionsShown : Show Options
+    PathValid --> TestRunning : Run Test
+    
+    OptionsShown --> OptionsConfigured : Apply Options
+    OptionsConfigured --> PathValid : Close Options
+    OptionsConfigured --> TestRunning : Run Test
+    
+    TestRunning --> TestCompleted : Test Success
+    TestRunning --> TestFailed : Test Error
+    TestRunning --> TestCancelled : User Cancel
+    
+    TestCompleted --> ResultsAvailable : Results Generated
+    TestFailed --> PathValid : Return to Main
+    TestCancelled --> PathValid : Return to Main
+    
+    ResultsAvailable --> PathValid : Stay on Main
+    ResultsAvailable --> ResultsViewerOpen : Open Results Viewer
+    
+    state ResultsViewerOpen {
+        [*] --> OverviewView
+        OverviewView --> ResultsView : Select Results
+        OverviewView --> ProfessorView : Select Professor Data
+        OverviewView --> SubjectView : Select Subject Data
+        OverviewView --> FileExplorerView : Select File Explorer
+        
+        ResultsView --> OverviewView : Select Overview
+        ResultsView --> ProfessorView : Select Professor Data
+        ResultsView --> SubjectView : Select Subject Data
+        ResultsView --> FileExplorerView : Select File Explorer
+        
+        ProfessorView --> OverviewView : Select Overview
+        ProfessorView --> ResultsView : Select Results
+        ProfessorView --> SubjectView : Select Subject Data
+        ProfessorView --> FileExplorerView : Select File Explorer
+        ProfessorView --> SubjectWindowOpen : Click Professor Link
+        
+        SubjectView --> OverviewView : Select Overview
+        SubjectView --> ResultsView : Select Results
+        SubjectView --> ProfessorView : Select Professor Data
+        SubjectView --> FileExplorerView : Select File Explorer
+        
+        FileExplorerView --> OverviewView : Select Overview
+        FileExplorerView --> ResultsView : Select Results
+        FileExplorerView --> ProfessorView : Select Professor Data
+        FileExplorerView --> SubjectView : Select Subject Data
+        
+        SubjectWindowOpen --> ProfessorView : Close Subject Window
+    }
+    
+    ResultsViewerOpen --> ResultsAvailable : Close Results Viewer
+    
+    state TestRunning {
+        [*] --> ExtractingData
+        ExtractingData --> ValidatingData : Data Extracted
+        ValidatingData --> GeneratingReport : Validation Complete
+        GeneratingReport --> SavingResults : Report Generated
+        SavingResults --> [*] : Results Saved
+    }
+    
+    PathValid --> [*] : Exit Application
+    ResultsAvailable --> [*] : Exit Application
+    ResultsViewerOpen --> [*] : Exit Application

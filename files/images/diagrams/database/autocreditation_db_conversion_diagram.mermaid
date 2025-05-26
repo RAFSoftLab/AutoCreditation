@@ -1,0 +1,57 @@
+flowchart TD
+    %% Input JSON Files
+    ProfJSON[professors_data.json<br/>- prof_list section<br/>- prof_tables section]
+    SubjJSON[subjects_data.json<br/>- subj_list section<br/>- subj_tables section]
+    ResJSON[results_data.json<br/>- programme info]
+    
+    %% Converters
+    ProfConv[ProfessorDBConverter]
+    SubjConv[SubjectDBConverter]
+    ResConv[ResultsDBConverter]
+    
+    %% Database Tables
+    DB[(SQLite Database<br/>acreditation.db)]
+    ProfTable[professors_table]
+    ProfSubjTable[prof_subjects_table]
+    ProfListTable[professors_list_table]
+    SubjTable[subjects_table]
+    ProgTable[programme_table]
+    
+    %% Back Conversion
+    BackConv[ProfessorDBToJSON]
+    
+    %% Output JSON Files
+    ProfOut[professors_output.json]
+    SubjOut[subjects_output.json]
+    ResOut[results_output.json]
+    
+    %% Flow
+    ProfJSON --> ProfConv
+    SubjJSON --> SubjConv
+    ResJSON --> ResConv
+    
+    ProfConv --> DB
+    SubjConv --> DB
+    ResConv --> DB
+    
+    DB --> ProfTable
+    DB --> ProfSubjTable
+    DB --> ProfListTable
+    DB --> SubjTable
+    DB --> ProgTable
+    
+    DB --> BackConv
+    BackConv --> ProfOut
+    BackConv --> SubjOut
+    BackConv --> ResOut
+    
+    %% Styling
+    classDef jsonFile fill:#e1f5fe
+    classDef converter fill:#fff3e0
+    classDef database fill:#f3e5f5
+    classDef table fill:#e8f5e8
+    
+    class ProfJSON,SubjJSON,ResJSON,ProfOut,SubjOut,ResOut jsonFile
+    class ProfConv,SubjConv,ResConv,BackConv converter
+    class DB database
+    class ProfTable,ProfSubjTable,ProfListTable,SubjTable,ProgTable table

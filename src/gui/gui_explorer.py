@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                             QHBoxLayout, QPushButton, QLabel, QTabWidget,
                             QFrame, QSizePolicy, QStackedWidget, QSystemTrayIcon,
                             QTreeView, QFileDialog, QFileSystemModel, QTextBrowser)
+from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtCore import Qt, QSize
 from PyQt5 import QtCore
 import PyQt5.QtGui as QtGui
@@ -18,6 +19,7 @@ from pyqtspinner.spinner import WaitingSpinner
 sys.path.append(os.getcwd())
 import src.gui.gui_support as gui_support
 import src.util as util
+import src.overview_and_statistics_gen as overview_and_statistics_gen
 
 
 class FileExplorer(QMainWindow):
@@ -34,6 +36,12 @@ class FileExplorer(QMainWindow):
         self.gen_tree = ''
 
         self.root_dir = os.getcwd() if root_dir == '' else root_dir
+
+        try:
+            self.analizer = overview_and_statistics_gen.AcademicDataAnalyzer(prof_data=util.load_json(os.path.join(self.root_dir, Path('tmp/professors_data.json'))), subj_data=util.load_json(os.path.join(self.root_dir, Path('tmp/subjects_data.json'))))
+        except Exception as e:
+            print(f'Error loading data:\n    {e}')
+            self.analizer = None
 
         # Running spinner
         # self.running_spinner = WaitingSpinner(self.html_viewer, True, True, Qt.ApplicationModal)
@@ -73,6 +81,7 @@ class FileExplorer(QMainWindow):
             "QPushButton { background-color: #3a7ebf; color: white; text-align: left; padding: 10px; border: none; }"
         )
         self.content_stack.setCurrentIndex(0)
+        self.dashboard_tab_changed(0)
         self.showMaximized()
 
     def create_sidebar(self):
@@ -110,6 +119,7 @@ class FileExplorer(QMainWindow):
         sidebar_layout.addWidget(app_name)
 
         # Add sidebar buttons
+
         dashboard_btn = QPushButton("Overview")
         dashboard_btn.setObjectName("dashboard_btn")
         dashboard_btn.setIcon(gui_support.create_icon('home'))
@@ -157,7 +167,7 @@ class FileExplorer(QMainWindow):
         topbar.setStyleSheet("background-color: #f0f0f0; border-bottom: 1px solid #ddd;")
         topbar_layout = QHBoxLayout(topbar)
 
-        dashboard_label = QLabel("Verification Overview")
+        dashboard_label = QLabel("Documentation Overview")
         dashboard_label.setFont(QFont("Arial", 14, QFont.Bold))
         topbar_layout.addWidget(dashboard_label)
 
@@ -169,21 +179,34 @@ class FileExplorer(QMainWindow):
         # Add tabs to the tab widget
         summary_tab = QWidget()
         stats_tab = QWidget()
-        reports_tab = QWidget()
 
         # Add content to each tab (simplified here)
         summary_layout = QVBoxLayout(summary_tab)
-        summary_layout.addWidget(QLabel("Summary Content Here"))
+        self.summary_viewer = QWebEngineView()
+        summary_layout.addWidget(self.summary_viewer)
 
         stats_layout = QVBoxLayout(stats_tab)
-        stats_layout.addWidget(QLabel("Statistics Content Here"))
+        self.stats_viewer = QWebEngineView()
+        stats_layout.addWidget(self.stats_viewer)
 
         tab_widget.addTab(summary_tab, "Summary")
-        tab_widget.addTab(stats_tab, "Options")
+        tab_widget.addTab(stats_tab, "Statistics")
+        tab_widget.currentChanged.connect(self.dashboard_tab_changed)
 
         dashboard_layout.addWidget(tab_widget)
 
         self.content_stack.addWidget(dashboard_container)
+
+    @QtCore.pyqtSlot(int)
+    def dashboard_tab_changed(self, index):
+        if index == 0:
+            if not self.analizer:
+                self.summary_viewer.setHtml("<h2>No data loaded</h2>")
+            self.summary_viewer.setHtml(self.analizer.generate_overview())
+        elif index == 1:
+            if not self.analizer:
+                self.stats_viewer.setHtml("<h2>No data loaded</h2>")
+            self.stats_viewer.setHtml(self.analizer.generate_statistics())
 
     def create_results_widget(self):
         # Tasks container with top bar and content area
@@ -199,16 +222,6 @@ class FileExplorer(QMainWindow):
         results_label = QLabel("Results View")
         results_label.setFont(QFont("Arial", 14, QFont.Bold))
         topbar_layout.addWidget(results_label)
-
-        # Add some task-specific action buttons to topbar
-        # new_task_btn = QPushButton("New Task")
-        # new_task_btn.setStyleSheet("background-color: #3498db; color: white; padding: 5px 10px;")
-
-        # filter_btn = QPushButton("Filter")
-        # filter_btn.setStyleSheet("padding: 5px 10px;")
-
-        # search_btn = QPushButton("Search")
-        # search_btn.setStyleSheet("padding: 5px 10px;")
 
         topbar_layout.addStretch()
 
@@ -262,20 +275,7 @@ class FileExplorer(QMainWindow):
         professors_label.setFont(QFont("Arial", 14, QFont.Bold))
         topbar_layout.addWidget(professors_label)
 
-        # Add some project-specific action buttons to topbar
-        # new_project_btn = QPushButton("New Project")
-        # new_project_btn.setStyleSheet("background-color: #27ae60; color: white; padding: 5px 10px;")
-
-        # import_btn = QPushButton("Import")
-        # import_btn.setStyleSheet("padding: 5px 10px;")
-
-        # export_btn = QPushButton("Export")
-        # export_btn.setStyleSheet("padding: 5px 10px;")
-
         topbar_layout.addStretch()
-        # topbar_layout.addWidget(import_btn)
-        # topbar_layout.addWidget(export_btn)
-        # topbar_layout.addWidget(new_project_btn)
 
         professor_layout.addWidget(topbar)
 
@@ -286,20 +286,13 @@ class FileExplorer(QMainWindow):
         professor_view = QWidget()
         professor_table = QWidget()
 
-        # Add content to each tab (simplified here)
-        # active_layout = QVBoxLayout(professor_view)
-        # active_layout.addWidget(QLabel("Professor List"))
-
         professor_view_layout = QVBoxLayout(professor_view)
-        # professor_list_layout.addWidget(QLabel("Professor List"))
         self.professor_view_viewer = QTextBrowser()
         professor_view_layout.addWidget(self.professor_view_viewer)
         self.professor_view_viewer.anchorClicked.connect(self.open_link)
         self.professor_view_viewer.setOpenLinks(False)
 
         professor_table_layout = QVBoxLayout(professor_table)
-        # professor_details_layout.addWidget(QLabel("Professor Details"))
-        # self.professor_table_viewer = QTextBrowser()
         self.professor_table_viewer = gui_support.DatabaseTableWidget()
         self.professor_table_viewer.set_table_data(os.path.join(self.root_dir, Path('tmp/acreditation.db')), "professors_table")
         professor_table_layout.addWidget(self.professor_table_viewer)
@@ -307,7 +300,6 @@ class FileExplorer(QMainWindow):
         tab_widget.addTab(professor_view, "View")
         tab_widget.addTab(professor_table, "Table")
         tab_widget.currentChanged.connect(self.prof_tab_changed)
-        # tab_widget.addTab(archived_tab, "Archived")
 
         professor_layout.addWidget(tab_widget)
 
@@ -318,9 +310,7 @@ class FileExplorer(QMainWindow):
         if index == 0:
             gui_support.load_html_content(self.professor_view_viewer, "results/professors_data.html", self.root_dir)
         elif index == 1:
-            # TODO: add table
             print("Table viewer")
-            # gui_support.load_html_content(self.professor_table_viewer, "results/professors_data.html", self.root_dir)
 
     def create_subject_widget(self):
         # Settings container with top bar and content area
@@ -337,16 +327,7 @@ class FileExplorer(QMainWindow):
         subject_label.setFont(QFont("Arial", 14, QFont.Bold))
         topbar_layout.addWidget(subject_label)
 
-        # Add save and reset buttons
-        # save_btn = QPushButton("Save Changes")
-        # save_btn.setStyleSheet("background-color: #27ae60; color: white; padding: 5px 10px;")
-
-        # reset_btn = QPushButton("Reset Defaults")
-        # reset_btn.setStyleSheet("padding: 5px 10px;")
-
         topbar_layout.addStretch()
-        # topbar_layout.addWidget(reset_btn)
-        # topbar_layout.addWidget(save_btn)
 
         subject_layout.addWidget(topbar)
 
@@ -356,30 +337,23 @@ class FileExplorer(QMainWindow):
         # Add tabs to the tab widget
         subject_view = QWidget()
         subject_table = QWidget()
-        # advanced_tab = QWidget()
 
         # Add content to each tab (simplified here)
         subject_view_layout = QVBoxLayout(subject_view)
-        # subject_view_layout.addWidget(QLabel("Subjects view"))
         self.subject_view_viewer = QTextBrowser()
         subject_view_layout.addWidget(self.subject_view_viewer)
         self.subject_view_viewer.anchorClicked.connect(self.open_link)
         self.subject_view_viewer.setOpenLinks(False)
 
         subject_table_layout = QVBoxLayout(subject_table)
-        # subject_table_layout.addWidget(QLabel("Subjects table"))
         self.subject_table_viewer = QTextBrowser()
         self.subject_table_viewer = gui_support.DatabaseTableWidget()
         self.subject_table_viewer.set_table_data(os.path.join(self.root_dir, Path('tmp/acreditation.db')), "subjects_table")
         subject_table_layout.addWidget(self.subject_table_viewer)
 
-        # advanced_layout = QVBoxLayout(advanced_tab)
-        # advanced_layout.addWidget(QLabel("Advanced Settings Options"))
-
         tab_widget.addTab(subject_view, "View")
         tab_widget.addTab(subject_table, "Table")
         tab_widget.currentChanged.connect(self.subj_tab_changed)
-        # tab_widget.addTab(advanced_tab, "Advanced")
 
         subject_layout.addWidget(tab_widget)
 
@@ -390,7 +364,6 @@ class FileExplorer(QMainWindow):
         if index == 0:
             gui_support.load_html_content(self.subject_view_viewer, "results/subjects_data.html", self.root_dir)
         elif index == 1:
-            # TODO: add table
             print("Table viewer")
 
     def create_explorer_widget(self):
@@ -560,7 +533,7 @@ class FileExplorer(QMainWindow):
             self.file_view.setRootIndex(self.model.index(path))
         else:
             # os.startfile(path)  # Opens file with default application
-            if sys.platform == "Windows":
+            if sys.platform.startswith('win'):
                 os.startfile(path)
             else:
                 opener = "open" if sys.platform == "darwin" else "xdg-open"

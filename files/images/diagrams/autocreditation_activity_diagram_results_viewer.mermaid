@@ -1,0 +1,53 @@
+flowchart TD
+    Start([Open Results Viewer]) --> CheckResults{Results File Exists?}
+    CheckResults -->|No| ShowError[Show "No Results Found" Popup]
+    ShowError --> End1([End])
+
+    CheckResults -->|Yes| LoadResults[Load Results Data]
+    LoadResults --> InitViewer[Initialize Results Viewer]
+    InitViewer --> ShowOverview[Display Overview Tab by Default]
+
+    ShowOverview --> WaitUser[Wait for User Action]
+
+    WaitUser --> UserAction{User Action}
+
+    UserAction -->|Select Overview| OverviewTabs[Show Data Overview & Statistics Tabs]
+    OverviewTabs --> WaitUser
+
+    UserAction -->|Select Results| ResultsTabs[Show Results Display & Doc Tree Tabs]
+    ResultsTabs --> WaitUser
+
+    UserAction -->|Select Professor Data| ProfTabs[Show Professor Data & Table Tabs]
+    ProfTabs --> GenProfHTML[Generate Professor HTML with Links]
+    GenProfHTML --> WaitProfAction[Wait for Professor Action]
+
+    WaitProfAction --> ProfAction{Professor Action}
+    ProfAction -->|Click Subject Link| OpenSubjWindow[Open New Window with Professor Subjects]
+    OpenSubjWindow --> WaitProfAction
+    ProfAction -->|Switch Tab| WaitUser
+
+    UserAction -->|Select Subject Data| SubjTabs[Show Subject Data & Table Tabs]
+    SubjTabs --> WaitUser
+
+    UserAction -->|Select File Explorer| FileExp[Show File Explorer Interface]
+    FileExp --> SetRoot[Set Root Path]
+    SetRoot --> BrowseAction{Browse Action}
+
+    BrowseAction -->|Browse Root| BrowseRoot[Open Directory Chooser]
+    BrowseRoot --> UpdateRoot[Update Root Path]
+    UpdateRoot --> RefreshTree[Refresh File Tree]
+    RefreshTree --> WaitFileAction[Wait for File Action]
+
+    WaitFileAction --> FileAction{File Action}
+    FileAction -->|Navigate| NavDir[Navigate to Directory]
+    NavDir --> WaitFileAction
+    FileAction -->|Back to Main| WaitUser
+
+    BrowseAction -->|Navigate Files| WaitFileAction
+
+    UserAction -->|Close Viewer| End2([End])
+
+    style Start fill:#90EE90
+    style End1 fill:#FFB6C1
+    style End2 fill:#90EE90
+    style ShowError fill:#FFB6C1
