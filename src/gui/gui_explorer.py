@@ -15,8 +15,9 @@ import PyQt5.QtGui as QtGui
 from PyQt5.QtGui import QIcon, QFont
 from pyqtspinner.spinner import WaitingSpinner
 
-# TODO: remove after test:
-sys.path.append(os.getcwd())
+# Testing only:
+# sys.path.append(os.getcwd())
+
 import src.gui.gui_support as gui_support
 import src.util as util
 import src.overview_and_statistics_gen as overview_and_statistics_gen

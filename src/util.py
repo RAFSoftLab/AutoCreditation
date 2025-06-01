@@ -472,7 +472,6 @@ def extract_path_from_tag(tag_line, doc_dir='', file_format='html'):
         else:
             print(f'Link to file not found: {tag_path}')
         return [{'name': tag_name, 'desc': tag_desc, 'path': tag_path, 'line': tag_line}]
-    # TODO: apply same principal as for HTML files
     if file_format == 'md':
         tag_desc = ''
         all_line_tags = re.findall(r'\[.+\]\(file\:.*?\)(?:\s|$|\_\_|\;|\,)', tag_line)
