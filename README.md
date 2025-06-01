@@ -329,46 +329,59 @@ A comprehensive interface for exploring verification results and extracted data:
 
 ## Requirements and solutions
 
- - Documentation content extraction
-   - Conversion of .doc to .docx
-     - Platform specific conversion
-       - Windows: MS Office Word
-         - Additional Python package (pywin32) is required and is installed automatically
-       - Linux: LibreOffice Writer
-       - Word/Writer is called, with file path and output path
-   - Conversion of .docx to .html
-     - .docx is converted to .html using Mammoth package
-     - With converted file, data extraction is possible:
-       - Extraction of text and tables
-       - Extraction of hyperlinks
-         - Verification of hyperlinks paths
+- Documentation content extraction
+  - Conversion of .doc to .docx
+    - Platform specific conversion
+      - Windows: MS Office Word
+        - Additional Python package (pywin32) is required and is installed automatically
+      - Linux: LibreOffice Writer
+      - Word/Writer is called, with file path and output path
+  - Conversion of .docx to .html
+    - .docx is converted to .html using Mammoth package
+      - With converted file, data extraction is possible:
+      - Extraction of text and tables
+      - Extraction of hyperlinks
+        - Verification of hyperlinks paths
   - Directory structure scanning
-   - Copy of documentation directory is made in a /tmp directory
-   - Listing of all files in a given directory
-     - Saving paths of all files in a structure
-       - To ensure document content reading is possible, files are renamed so that all non-latin characters are replaced with latin characters
+    - Copy of documentation directory is made in a /tmp directory
+      - Listing of all files in a given directory
+      - Saving paths of all files in a structure
+      - To ensure document content reading is possible, files are renamed so that all non-latin characters are replaced with latin characters
   - Finding files using found hyperlinks
     - Files with content that needs to be tested are located using hyperlinks, which are paths to those files
     - Found files are converted as stated above
   - Tables from converted files are read using pandas
     - Data from tables is structured into dictionaries
-  - Professors file and subjects file comparison
-    - Subjects for each professor are listed in the professors file
-    - Professor is named for each subject in the subjects file
-    - For each professor, subjects are compared to subjects in the subjects file
-      - If subject is not found in the subjects file, professor-subject is added to the list of unmatched items
-      - If subject is found in the subjects file, but professor name is not matching, item is added to the list of potential matches, marked as "prof_name_mismatch"
-      - If subject is found in the subjects file, but subject name is not matching, item is added to the list of potential matches, marked as "subj_name_mismatch"
-  - Comparison results are filtered
-    - Comparison results are filtered so only subjects of the studies programme for which the processed documentation is written are listed
-    - Professors to subjects comparison results are filtered into 3 categories formed by:
-      - Finding items with no matching subject (no subject with matching subject code)
-      - Finding items where professor name is not matching (subject code is matching, but professor name is not matching)
-      - Finding items where subject name is not matching (subject code is matching, but subject name is not matching)
-    - Subjects to professors comparison results are filtered into 3 categories formed by:
-      - Finding items with no matching professor (no professor with current subject listed in the subjects list)
-      - Finding items where professor name is not matching (subject found in the subjects list of a professor, but professor name is not matching)
-      - Finding items where subject name is not matching (subject found in the subjects list of a professor, but subject name is not matching)
+- Professors file and subjects file comparison
+  - Subjects for each professor are listed in the professors file
+  - Professor is named for each subject in the subjects file
+  - For each professor, subjects are compared to subjects in the subjects file
+    - If subject is not found in the subjects file, professor-subject is added to the list of unmatched items
+    - If subject is found in the subjects file, but professor name is not matching, item is added to the list of potential matches, marked as "prof_name_mismatch"
+    - If subject is found in the subjects file, but subject name is not matching, item is added to the list of potential matches, marked as "subj_name_mismatch"
+- Comparison results are filtered
+  - Comparison results are filtered so only subjects of the studies programme for which the processed documentation is written are listed
+  - Professors to subjects comparison results are filtered into 3 categories formed by:
+    - Finding items with no matching subject (no subject with matching subject code)
+    - Finding items where professor name is not matching (subject code is matching, but professor name is not matching)
+    - Finding items where subject name is not matching (subject code is matching, but subject name is not matching)
+  - Subjects to professors comparison results are filtered into 3 categories formed by:
+    - Finding items with no matching professor (no professor with current subject listed in the subjects list)
+    - Finding items where professor name is not matching (subject found in the subjects list of a professor, but professor name is not matching)
+    - Finding items where subject name is not matching (subject found in the subjects list of a professor, but subject name is not matching)
+- Data/Results saving and loading
+  - Results and professor/subjects data are saved as a JSON file
+  - Extracted data (professors and subjects data) is saved in a SQLite database
+  - Both results JSON and database can be imported and exported
+    - Automatic conversion of JSON to database and vice versa
+    - Professor/subject data is extracted from imported save file
+- HTML generation
+  - Results are displayed in HTML format
+  - HTML tables are generated for professors and subjects data, with clickable links to subjects/professors data
+  - Database content is displayed in *Table* tabs of *Professors* and *Subjects* views of Results Explorer
+  - Data overview and statistics are displayed in *Overview* view of Results Explorer
+    - Content is loaded into styled HTML
+- File explorer is integrated into the application, with root directory selection
 
 [Back to top](#autocreditation)
 
