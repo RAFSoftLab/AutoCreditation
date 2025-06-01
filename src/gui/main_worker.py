@@ -26,7 +26,7 @@ class Worker(QObject):
     """
     Worker thread for the application.
     """
-    # TODO Remove after debugging:
+    # Debugging only:
     # debugpy.debug_this_thread()
     finished = pyqtSignal(dict)
     progress_bar_visibility = pyqtSignal(bool)

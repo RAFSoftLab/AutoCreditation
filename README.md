@@ -2,11 +2,28 @@
 
 Automated reading and checkup of university acreditation documentation files.
 
+---
+
 # Table of contents
 
 - [AutoCreditation](#autocreditation)
 - [Table of contents](#table-of-contents)
 - [Overview](#overview)
+  - [Features](#features)
+  - [System Requirements](#system-requirements)
+    - [Windows](#windows)
+    - [Linux](#linux)
+- [Configuration and startup](#configuration-and-startup)
+  - [Setting up the environment](#setting-up-the-environment)
+  - [Automatic dependency installation](#automatic-dependency-installation)
+  - [Manual dependency installation](#manual-dependency-installation)
+- [User Guide](#user-guide)
+  - [GUI](#gui)
+    - [Main window](#main-window)
+      - [Components](#components)
+    - [Results Viewer](#results-viewer)
+      - [View Categories](#view-categories)
+    - [Walkthrough](#walkthrough)
 - [Technial details](#technial-details)
   - [Use case diagram](#use-case-diagram)
   - [Component diagram](#component-diagram)
@@ -21,21 +38,242 @@ Automated reading and checkup of university acreditation documentation files.
     - [Database class structure diagram](#database-class-structure-diagram)
     - [Database conversion diagram](#database-conversion-diagram)
   - [Requirements and solutions](#requirements-and-solutions)
-- [Configuration and startup](#configuration-and-startup)
-  - [Setting up the environment](#setting-up-the-environment)
-    - [Automatic dependency installation](#automatic-dependency-installation)
-    - [Manual dependency installation](#manual-dependency-installation)
-  - [Running the project](#running-the-project)
-- [Usage](#usage)
-  - [GUI](#gui)
 - [Changelog](#changelog)
+
+---
 
 # Overview
 
-- Converts given documentation files to text and verifies content, confirming that needed documents are and all required information is present.
-- Supported operating systems:
- - Windows (with MS Office Word installed)
- - Linux (with LibreOffice Writer installed)
+AutoCreditation is a desktop application designed to streamline the verification process of university accreditation documentation. It automatically extracts content from documentation files, verifies required information is present, and cross-references data between professors and subjects files to ensure consistency and completeness.
+
+## Features
+
+- **Multi-format Document Support**: Processes .doc, .docx files with automatic conversion
+- **Cross-platform Compatibility**: Works on Windows (MS Office Word) and Linux (LibreOffice Writer)
+- **Data Extraction**: Extracts text, tables, and hyperlinks from documentation
+- **Automated Verification**: Cross-references professor and subject data for consistency
+- **Interactive GUI**: User-friendly interface with progress tracking
+- **Results Visualization**: HTML-based results display with detailed statistics
+- **Data Export/Import**: Save and load verification results and databases
+- **File Explorer Integration**: Built-in file browser for documentation navigation
+
+## System Requirements
+
+### Windows
+
+- Windows 10 or later
+- Microsoft Office Word (for .doc/.docx conversion)
+- Python 3.12+
+
+### Linux
+
+- Ubuntu 18.04+ or equivalent
+- LibreOffice Writer (for document conversion)
+- Python 3.12+
+
+[Back to top](#autocreditation)
+
+---
+
+# Configuration and startup
+
+## Setting up the environment
+
+- Clone the repository to your local machine
+
+  ```bash
+  git clone <repository_url>
+  # Set the working directory to the repository
+  cd AutoCreditation
+  ```
+
+- Create and activate a virtual environment
+
+  ```bash
+  # Create a virtual environment
+  python -m venv <env_name>
+
+  # Activate the virtual environment
+  # Windows
+  <env_name>\Scripts\activate
+  # Linux
+  source <env_name>/bin/activate
+  ```
+
+## Automatic dependency installation
+
+  To automatically install the required dependencies for this project, run:
+
+  ```bash
+  pip install -r requirements.txt
+  ```
+
+## Manual dependency installation
+
+  To manually install the required dependencies, install the following packages. To create a conda environment, use the following command:
+
+  ```bash
+  conda create -n <env_name> python=3.12
+  ```
+
+  | _DEPENDENCY_ | _PIP_ | _CONDA_ | _CONDITIONS_ |
+  | :----------: | :---: | :-----: | :-----------: |
+  | docx | pip install python-docx | conda install conda-forge::python-docx | :x: |
+  | mammoth | pip install mammoth | conda install auto::mammoth | :x: |
+  | PyQtWebEngine | pip install PyQtWebEngine | conda install conda-forge::pyqtwebengine | :x: |
+  | PyQt5 | pip install PyQt5 | conda install conda-forge::pyqt | :x: |
+  | pyqtspinner | pip install pyqtspinner | :x: | :x: |
+  | pandas | pip install pandas | conda install anaconda::pandas | :x: |
+  | ujson | pip install ujson | conda install anaconda::ujson | :x: |
+  | pywin32 | pip install pywin32 | conda install anaconda::pywin32 | Windows only |
+
+
+[Back to top](#autocreditation)
+
+---
+
+# User Guide
+
+Graphical user interface (GUI) allows user-friendly interaction with the application.
+
+## GUI
+
+Application can be used by running the `run_app.py` file. GUI is used to select the documentation directory, run the application, and view the results.
+
+### Main window
+
+#### Components
+
+- **Documentation Directory Path**: Text input for specifying the path to your accreditation documentation
+- **Choose Directory Button**: Opens file explorer to locate documentation folder
+- **Options Button**: Reveals configuration tabs:
+
+  - General Options:
+
+    - Load/Save results with success/failure notifications
+    - Import/Export database functionality
+    - Clear /tmp directory on test start
+    - Reuse previously extracted data (speeds up repeated tests)
+
+  - Test Options:
+
+    - Enable/disable professor-subject table comparison (always enabled)
+    - Set minimum number of subjects per professor
+    - Enable class points sum verification (should equal 100)
+
+- **Run Button**: Initiates the verification process (disabled until valid path is provided)
+- **Results Viewer Button**: Opens the results exploration window
+
+- **Status Indicators**
+
+  - Path Validation:
+
+    - Red "Invalid directory path" - when path doesn't exist
+    - Green "Valid directory path" - when path is valid and Run button becomes enabled
+
+  - Progress Tracking: During test execution, displays progress bar, spinner, and status updates
+
+### Results Viewer
+
+A comprehensive interface for exploring verification results and extracted data:
+
+#### View Categories
+
+- **Overview**
+
+  - Data Overview: Summary statistics (professor count, subject count, etc.)
+  - Statistics Overview: Detailed analytics about the documentation
+
+- **Results**
+
+  - Results Display: HTML-formatted verification results
+  - Documentation Tree: Visual representation of the documentation structure
+
+- **Professor Data**
+
+  - Data View: Interactive HTML tables with clickable links to subject details
+  - Table Viewer: Raw database view of professor information
+
+- **Subjects Data**
+
+  - Data View: Interactive HTML tables for subject information with clickable links to professor details
+  - Table Viewer: Raw database view of subject data
+
+- **File Explorer**
+
+  - Root Path Selection: Choose starting directory for exploration
+  - Integrated Browser: Navigate through documentation files within the application
+
+### Walkthrough
+
+- At the start, path to the documentation directory should be written in the text line, or chosen from the file dialog opend by clicking the "Choose directory" button.
+- If path in the text line is empty, "No documentation directory selected" label is shown in red colour and the "Run" button is disabled.
+
+  ![main_window_1](files/images/app_run/app_main_1.png)
+
+- If path in the text line is valid, "Valid directory path" label is shown in green colour and the "Run" button is enabled.
+
+  ![main_window_2](files/images/app_run/app_main_2.png)
+
+- Options button switches to the options view with two tabs:
+  - *General* tab with basic options
+    - Clearing */tmp* directory at the start of the application
+    - Using extracted documentation data if found (skipping conversion and extraction)
+    - Saving/Loading results (JSON file) and Exporting/Importing database
+
+      ![main_window_3](files/images/app_run/app_main_3.png)
+
+  - *Test Options* tab with data testing/verification options
+    - Comparing professors and subjects data (finding mismatched items in professors and subjects tables)
+    - Verifying professors have at least minimum number of subjects (with minimum number of subjects set)
+    - Verifying class points sum is equal to 100
+
+      ![main_window_4](files/images/app_run/app_main_4.png)
+
+- Clicking the "Run" button starts the application.
+
+- The application run scripts and update the results in the text area.
+- While the application is running, all elements in the main window are disabled. The "Run" button text is changed to "Running...". Spinner is shown over the results text area. Progress bar is displayed, and information about the progress is shown in the status label.
+
+  ![main_window_5](files/images/app_run/app_main_5.png)
+
+- When the application is finished, all elements in the main window are enabled. The "Run" button text is changed to "Run". Spinner is hidden. Progress bar is hidden. Progress description is hidden.
+- Final results are shown in the results explorer window automatically opened at the end of test execution.
+- This window has 5 views selected in the sidebar:
+  - **Overview**: Summary of the documentation data and statistical analysis, each in a separate tab
+
+    ![explorer_window_1](files/images/app_run/app_explorer_1.png)
+
+    ![explorer_window_2](files/images/app_run/app_explorer_2.png)
+
+  - **Results**: Results of the test execution and documentation tree, each in a separate tab
+
+    ![explorer_window_3](files/images/app_run/app_explorer_3.png)
+
+    ![explorer_window_4](files/images/app_run/app_explorer_4.png)
+
+  - **Professors**: List of professors and professor tables (as HTML), with subjects displayed upon clicking on a *Subjects* link (Table is displayed in a separate window);
+
+    ![explorer_window_5](files/images/app_run/app_explorer_5.png)
+
+    ![explorer_window_6](files/images/app_run/app_explorer_6.png)
+
+    and database viewer of professors data (with search/filter functionality)
+
+    ![explorer_window_7](files/images/app_run/app_explorer_7.png)
+
+  - **Subjects**: List of subjects and subject tables (as HTML), with professors displayed upon clicking on a professor link (Table is displayed in a separate window);
+
+    ![explorer_window_8](files/images/app_run/app_explorer_8.png)
+
+    and database viewer of subjects data (with search/filter functionality)
+
+    ![explorer_window_9](files/images/app_run/app_explorer_9.png)
+
+  - **Explorer**: File explorer with adjustable root directory
+
+    ![explorer_window_10](files/images/app_run/app_explorer_10.png)
+
 
 [Back to top](#autocreditation)
 
@@ -136,79 +374,6 @@ Automated reading and checkup of university acreditation documentation files.
 
 ---
 
-# Configuration and startup
-
-## Setting up the environment
-
-### Automatic dependency installation
-
-  To automatically install the required dependencies for this project, run:
-
-  ```bash
-  pip install -r requirements.txt
-  ```
-
-### Manual dependency installation
-
-  To manually install the required dependencies, install the following packages. To create a conda environment, use the following command:
-
-  ```bash
-  conda create -n <env_name> python=3.12
-  ```
-
-  | _DEPENDENCY_ | _PIP_ | _CONDA_ |
-  | :----------: | :---: | :-----: |
-  | docx | pip install python-docx | conda install conda-forge::python-docx |
-  | PyQt5 | pip install PyQt5 | conda install conda-forge::pyqt |
-  | pyqtspinner | pip install pyqtspinner | :x: |
-  | mammoth | pip install mammoth | conda install auto::mammoth |
-  | pandas | pip install pandas | conda install anaconda::pandas |
-  | ujson | pip install ujson | conda install anaconda::ujson |
-
-
-## Running the project
-
-  TODO
-
-[Back to top](#autocreditation)
-
----
-
-# Usage
-
-Graphical user interface (GUI) allows user-friendly interaction with the application.
-
-## GUI
-
-Application can be used by running the `run_app.py` file. GUI is used to select the documentation directory, run the application, and view the results.
-
-- At the start, path to the documentation directory should be written in the text line, or chosen from the file dialog opend by clicking the "Choose directory" button.
-- If path in the text line is empty, "No documentation directory selected" label is shown in red colour and the "Run" button is disabled.
-
-  ![main_window_1](files/images/app_run/app_main_1.png)
-
-- If path in the text line is not valid, "Invalid directory path" label is shown in red colour and the "Run" button is disabled.
-- If path in the text line is valid, "Valid directory path" label is shown in green colour and the "Run" button is enabled.
-
-  ![main_window_2](files/images/app_run/app_main_2.png)
-
-- Clicking the "Run" button starts the application.
-
-  ![main_window_3](files/images/app_run/app_main_3.png)
-
-- The application run scripts and update the results in the text area.
-- While the application is running, all elements in the main window are disabled. The "Run" button text is changed to "Running...". Spinner is shown over the results text area. Progress bar is displayed, and information about the progress is shown in the status label.
-
-  ![main_window_4](files/images/app_run/app_main_4.png)
-
-- When the application is finished, all elements in the main window are enabled. The "Run" button text is changed to "Run". Spinner is hidden. Progress bar is hidden. Progress description is hidden. Final results are shown in the results text area.
-
-  ![main_window_5](files/images/app_run/app_main_5.png)
-
-[Back to top](#autocreditation)
-
----
-
 # Changelog
 
   - 0.0.1 - Project created
@@ -304,3 +469,10 @@ Application can be used by running the `run_app.py` file. GUI is used to select 
     - Testing if professors have at least minimum number of subjects (set in gui)
     - Testing if class points sum is equal to 100 (set in gui) for subjects
     - Moved pywin32 package installation to requirements.txt as conditional
+  - 0.2.0 - Full functionality and README
+    - Application fully functional, tested and documented
+    - README.md updated
+
+[Back to top](#autocreditation)
+
+---
