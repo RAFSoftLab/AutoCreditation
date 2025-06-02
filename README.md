@@ -17,6 +17,7 @@ Automated reading and checkup of university acreditation documentation files.
   - [Setting up the environment](#setting-up-the-environment)
   - [Automatic dependency installation](#automatic-dependency-installation)
   - [Manual dependency installation](#manual-dependency-installation)
+- [Build](#build)
 - [User Guide](#user-guide)
   - [GUI](#gui)
     - [Main window](#main-window)
@@ -126,7 +127,22 @@ AutoCreditation is a desktop application designed to streamline the verification
   | pandas | pip install pandas | conda install anaconda::pandas | :x: |
   | ujson | pip install ujson | conda install anaconda::ujson | :x: |
   | pywin32 | pip install pywin32 | conda install anaconda::pywin32 | Windows only |
+  | PyInstaller | pip install pyinstaller | conda install conda-forge::pyinstaller | :x: |
 
+[Back to top](#autocreditation)
+
+---
+
+# Build
+
+- *AutoCreditation.spec*: PyInstaller specification file for building the application
+- To build the application, run the following command:
+
+  ```bash
+  pyinstaller AutoCreditation.spec
+  ```
+
+- The application is built in the dist directory
 
 [Back to top](#autocreditation)
 
@@ -382,6 +398,9 @@ A comprehensive interface for exploring verification results and extracted data:
   - Data overview and statistics are displayed in *Overview* view of Results Explorer
     - Content is loaded into styled HTML
 - File explorer is integrated into the application, with root directory selection
+- PyInstaller build
+  - PyInstaller is used to build the application - a single executable file
+  - Build specification file is provided: *AutoCreditation.spec*
 
 [Back to top](#autocreditation)
 
@@ -485,6 +504,9 @@ A comprehensive interface for exploring verification results and extracted data:
   - 0.2.0 - Full functionality and README
     - Application fully functional, tested and documented
     - README.md updated
+  - 0.3.0 - PyInstaller build, GitHub Actions
+    - PyInstaller build added
+    - GitHub Actions for build and release added
 
 [Back to top](#autocreditation)
 
