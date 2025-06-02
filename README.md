@@ -18,6 +18,7 @@ Automated reading and checkup of university acreditation documentation files.
   - [Automatic dependency installation](#automatic-dependency-installation)
   - [Manual dependency installation](#manual-dependency-installation)
 - [Build](#build)
+- [Release](#release)
 - [User Guide](#user-guide)
   - [GUI](#gui)
     - [Main window](#main-window)
@@ -143,6 +144,22 @@ AutoCreditation is a desktop application designed to streamline the verification
   ```
 
 - The application is built in the dist directory
+
+[Back to top](#autocreditation)
+
+---
+
+# Release
+
+- GitHub Actions is used to build and release the application
+- To build and release the application, push a version tag:
+
+  ```bash
+  git tag v<version> && git push origin v<version>
+
+  # Example:
+  git tag v0.3.0 && git push origin v0.3.0
+  ```
 
 [Back to top](#autocreditation)
 
