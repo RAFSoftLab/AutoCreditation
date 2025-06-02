@@ -33,7 +33,7 @@ jobs:
     - name: Prepare artifacts
       run: |
         mkdir release
-        copy dist\AutoCreditation\AutoCreditation.exe release\AutoCreditation.exe
+        copy dist\AutoCreditation.exe release\AutoCreditation.exe
       shell: cmd
 
     - name: Upload artifacts

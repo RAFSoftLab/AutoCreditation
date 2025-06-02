@@ -524,6 +524,7 @@ A comprehensive interface for exploring verification results and extracted data:
   - 0.3.0 - PyInstaller build, GitHub Actions
     - PyInstaller build added
     - GitHub Actions for build and release added
+  - 0.3.1 - App build and release fixes
 
 [Back to top](#autocreditation)
 
